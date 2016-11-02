@@ -45,10 +45,10 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
     select(path, file, plate_id, template, position)
   paths <- unique(annot$path)
   plates <-
-    left_join(annot, read_csv(crp_path, col_types = 'ciiiiiiiiidddddl'), by = c('template', 'position')) %>%
+    left_join(annot, read_csv(crp_path, col_types = 'ciiidddddddddddl'), by = c('template', 'position')) %>%
     select(path, plate_id, starts_with('rough'), rotate, starts_with('fine'), invert)
   grids  <-
-    left_join(annot, read_csv(grd_path, col_types = 'ciiciiiiiiiiiiiil'), by = c('template', 'position')) %>%
+    left_join(annot, read_csv(grd_path, col_types = 'ciiciiidiiiiiiii'), by = c('template', 'position')) %>%
     group_by(plate_id) %>%
     arrange(row, column, replicate) %>%
     mutate(colony_num = 1:n()) %>%
