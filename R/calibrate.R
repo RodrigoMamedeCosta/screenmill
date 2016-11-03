@@ -87,12 +87,12 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, step = 0.2,
 
   # Get paths to templates relative to dir, and corresponding plate positions
   annotation <-
-    read_csv(plt_path) %>%
+    read_csv(plt_path, col_types = 'cDiiidcccicccdcTTcc') %>%
     select(template, group, position, strain_collection_id, plate) %>%
     mutate(template = paste(dir, template, sep = '/')) %>%
     distinct
 
-  key <- read_csv(key_path)
+  key <- read_csv(key_path, col_types = 'cccciiil')
 
   templates <- unique(annotation$template)
 

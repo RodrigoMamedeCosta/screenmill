@@ -13,9 +13,9 @@ review <- function(dir = '.') {
   if (!(file.exists(crop_path) & file.exists(grid_path))) {
     stop('Please annotate and calibrate before reviewing.')
   }
-  crop <- readr::read_csv(crop_path)
+  crop <- readr::read_csv(crop_path, col_types = 'ciiidddddddddddl')
   init <-
-    readr::read_csv(grid_path) %>%
+    readr::read_csv(grid_path, col_types = 'ciiciiidiiiiiiii') %>%
     left_join(crop, by = c('template', 'position'))
 
   if (!has_name(init, 'excluded')) {
