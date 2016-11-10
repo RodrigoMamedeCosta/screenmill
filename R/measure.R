@@ -6,18 +6,16 @@
 #' @param overwrite Should previous measurements be overwritten?
 #' @param save.plates Should cropped/rotated plates be saved? Defaults to \code{FALSE}.
 #' @param save.colonies Should cropped colonies be saved? Defaults to \code{TRUE}.
-#' @param max.background The maximum background intensity
 #'
 #' @importFrom readr read_csv write_csv
 #' @importFrom parallel mclapply detectCores
 #' @export
 
-measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T, max.background = 0.5) {
+measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T) {
 
   # Validate input
   assert_that(
-    is.dir(dir), is.flag(overwrite), is.flag(save.plates), is.flag(save.colonies),
-    is.number(max.background), max.background >= 0, max.background <= 1
+    is.dir(dir), is.flag(overwrite), is.flag(save.plates), is.flag(save.colonies)
   )
 
   # Clean trailing slash from directory input
@@ -68,7 +66,7 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
   # For each image
   message('Measuring ', length(paths), ' images')
   progress <- progress_estimated(length(paths))
-  cores <- ifelse(.Platform$OS.type == 'windows', 1, max(1, detectCores(), na.rm = T))
+  cores <- ifelse(.Platform$OS.type == 'windows', 1, max(1, detectCores() - 1, na.rm = T))
   lapply(paths, function(pth) {
 
     progress$tick()$print()
@@ -87,12 +85,6 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
         fine    <- with(crop, rotated[ fine_l:fine_r, fine_t:fine_b ])
         if (crop$invert) fine <- 1 - fine
 
-        # Background threshold is midpoint between foregroun
-        clusters <- kmeans(as.vector(fine), centers = 2)$centers
-        fg <- max(clusters)
-        bg <- min(clusters)
-        bg_thresh <- mean(clusters)
-
         # Save cropped plate in desired format
         if (save.plates) {
           target <- paste0(dir, '/plates/')
@@ -109,7 +101,7 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
         # ---- Measure colonies ----
         grid <- filter(grids, plate_id == p)
 
-        result    <- with(grid, measureColonies(fine, l, r, t, b, background, bg_thresh))
+        result    <- with(grid, measureColonies(fine, l, r, t, b, background))
         grid$size <- result$measurements
 
         # Save colonies in desired format
@@ -140,8 +132,11 @@ measure_addin <- function() {
   measure(dir, overwrite = TRUE)
 }
 
-background <- function(m, thresh) {
-  m <- as.vector(m)
-  bg <- m[which(m < thresh)]
-  mean(bg)
+background <- function(colony) {
+  colony  <- as.vector(colony)
+  centers <- kmeans(colony, centers = 2)$centers
+  bg      <- colony[which(colony < mean(centers))]
+  result  <- mean(bg)
+  if (is.nan(result)) result <- mean(centers)
+  return(result)
 }

@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // measureColonies
-List measureColonies(NumericMatrix img, NumericVector l, NumericVector r, NumericVector t, NumericVector b, Function background, NumericVector thresh);
-RcppExport SEXP screenmill_measureColonies(SEXP imgSEXP, SEXP lSEXP, SEXP rSEXP, SEXP tSEXP, SEXP bSEXP, SEXP backgroundSEXP, SEXP threshSEXP) {
+List measureColonies(NumericMatrix img, NumericVector l, NumericVector r, NumericVector t, NumericVector b, Function background);
+RcppExport SEXP screenmill_measureColonies(SEXP imgSEXP, SEXP lSEXP, SEXP rSEXP, SEXP tSEXP, SEXP bSEXP, SEXP backgroundSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,8 +17,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type t(tSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type b(bSEXP);
     Rcpp::traits::input_parameter< Function >::type background(backgroundSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type thresh(threshSEXP);
-    rcpp_result_gen = Rcpp::wrap(measureColonies(img, l, r, t, b, background, thresh));
+    rcpp_result_gen = Rcpp::wrap(measureColonies(img, l, r, t, b, background));
     return rcpp_result_gen;
 END_RCPP
 }
