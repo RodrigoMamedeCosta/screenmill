@@ -224,7 +224,8 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
             gather('colony_col', 'replicate', starts_with('V')) %>%
             mutate(
               colony_row = as.integer(colony_row),
-              colony_col = as.integer(gsub('V', '', colony_col))
+              colony_col = as.integer(gsub('V', '', colony_col)),
+              replicate  = as.integer(replicate)
             )
 
           col_df <-
