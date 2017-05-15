@@ -30,4 +30,3 @@ Computes the effect of plate position on colony growth.
 \seealso{
 \code{\link[MASS]{rlm}} \code{\link[stats]{loess}}
 }
-

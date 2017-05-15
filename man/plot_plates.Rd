@@ -33,4 +33,3 @@ A ggplot object
 This function will plot plates ~ queries for a desired metric with forced
 upper and lower bounds
 }
-

@@ -30,4 +30,3 @@ A dataframe with columns:
 \description{
 Reads ScreenMill Colony Measurement engine log file.
 }
-

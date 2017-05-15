@@ -65,4 +65,3 @@ explored, which effectively aligns a rectangular shape with the axes.
 Fine cropping finds the nearest object edge (problematic for plates without
 any growth on the intended grid edges).
 }
-

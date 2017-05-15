@@ -37,4 +37,3 @@ remaining colonies). `read_dr` translates these colony numbers to count
 rowwise for a 4x4 matrix to match the rowwise counting for 4 colony
 replicates.
 }
-

@@ -18,4 +18,3 @@ new_strain_collection(id, nplates, format = 96, dim = c(2, 3))
 \description{
 A convenience function to create a new strain collection keyfile
 }
-

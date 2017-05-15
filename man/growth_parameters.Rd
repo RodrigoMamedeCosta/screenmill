@@ -35,4 +35,3 @@ fit curve:
 Calculates colony growth parameters by fitting a smooth growth curve using
 \code{\link[stats]{smooth.spline}}.
 }
-

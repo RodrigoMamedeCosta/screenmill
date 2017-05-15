@@ -13,4 +13,3 @@ Eric Bryant \email{eeb2139@columbia.edu},
 
 Maintainer: Eric Bryant \email{eeb2139@columbia.edu}
 }
-

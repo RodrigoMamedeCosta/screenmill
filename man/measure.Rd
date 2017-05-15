@@ -4,8 +4,7 @@
 \alias{measure}
 \title{Measure Colonies}
 \usage{
-measure(dir = ".", overwrite = F, save.plates = F, save.colonies = T,
-  max.background = 0.5)
+measure(dir = ".", overwrite = F, save.plates = F, save.colonies = T)
 }
 \arguments{
 \item{dir}{Path to directory to process.}
@@ -15,10 +14,7 @@ measure(dir = ".", overwrite = F, save.plates = F, save.colonies = T,
 \item{save.plates}{Should cropped/rotated plates be saved? Defaults to \code{FALSE}.}
 
 \item{save.colonies}{Should cropped colonies be saved? Defaults to \code{TRUE}.}
-
-\item{max.background}{The maximum background intensity}
 }
 \description{
 Measure and save colonies.
 }
-
