@@ -117,6 +117,44 @@ find_header <- function(path, match, delim, max = 100) {
 }
 
 
+# Utils: read_plate_layout ------------------------------------------------------------------------
+
+# Gather annotated plate in wide format into long format.
+#
+# Given a table with columns "row", "1", "2", ... gather everything but the "row"
+# column into a table with variables "row", "column", `value`, "plate".
+#
+# @param path Path to CSV to gather
+# @param value Name of value variable
+# @param plate_pattern Regex used to extract plate number from `path`
+#
+# @details It is easiest to annotate e.g. a 96 well plate with strain, plasmid,
+# OD600 etc. information in a way that looks visually similar to the plate.
+# However this results in multiple tables (one for each annotated variable) in
+# wide format. This function will convert such tables into long format such
+# that each variable is in a single column rather than spread out in the grid
+# style plate layout. Multiple gathered annotations can easily be joined to
+# a single table
+#
+#' @importFrom readr read_csv cols
+#' @importFrom tidyr gather_
+#' @importFrom stringr str_extract regex
+
+plate_gather <- function(path, value, plate_pattern = '(?<=(plate))[0-9]{1,}') {
+
+  plate_numb <- as.integer(str_extract(basename(path), regex(plate_pattern, ignore_case = T)))
+  if (is.na(plate_numb)) stop('Failed to determine plate number for:\n', basename(path))
+
+  readr::read_csv(path, col_types = readr::cols()) %>%
+    tidyr::gather_(
+      'column',
+      value,
+      dplyr::select_vars(names(.), -dplyr::matches('row')), # gathers all columns but 'row'
+      convert = T                                           # Type convert after gathering
+    ) %>%
+    dplyr::mutate(plate = plate_numb)
+}
+
 # Utils: new_strain_collection ------------------------------------------------
 
 # Expand vector of letters

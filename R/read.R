@@ -1,4 +1,61 @@
-#------------------------------------------------------------------------------
+# Read plate layout -------------------------------------------------------------------------------
+#' @md
+#' @title Read plate layout
+#'
+#' Reads a directory of plate layout CSVs exported from Numbers (for mac) into a dataframe.
+#'
+#' @param dir A directory.
+#'
+#' @details To generate a plate layout directory with Numbers, make a separate sheet for each plate
+#' and name each sheet "plate`<number>`" (Replace `<number>` with the plate number). Then create one
+#' table for each annotation with columns named "row", "1", "2", "3" etc. for the dimension of the
+#' plate. In the first "row" column, number each row "1", "2", "3" etc. for the dimension of the
+#' plate. Name each tabel with the intended annotation (e.g. "strain_id" for a table annotating
+#' strain IDs for each position in the plate). Once you have annotated your plates, you can export
+#' them to CSV (`File>Export To>CSV...`). Name the resulting directory with the desired strain
+#' collection ID (some combination of the date and a descriptive word is recommended). The files
+#' in this directory will be named `<sheet>-<table>.csv` (e.g. `plate1-strain_id.csv`).
+#'
+#' These tables are required for every plate:
+#'
+#' - **strain_id** - The strain identifier.
+#' - **strain_name** - The human-readable name of the strain.
+#' - **plate_control** - (T/F) is position intended to be used as a control for plate normalization?
+#'
+#' These tables are recommended (depending on the experiment):
+#'
+#' - *plasmid_id* - A plasmid identifier
+#' - *OD600* - The culture density used for pinning.
+#' - *pinnings* - The number of pinnings from source plate to target plate.
+#' - *excluded* - positions to exclude from analysis.
+#' - *start_temp* - The starting temperature at the beginning of the experiment.
+#' - *end_temp* - The ending temperature at the end of the experiment.
+#' - *start_humidity* - The starting humidity at the beginning of the experiment.
+#' - *end_humidity* - The ending humidity at the end of the experiment.
+#'
+#' @importFrom stringr str_extract
+#' @importFrom purrr map reduce map_df
+#' @export
+
+read_plate_layout <- function(dir) {
+  assert_that(is.dir(dir))
+  list.files(dir) %>%
+    # annotation based on file name as name of table in sheet (between "-" and ".csv")
+    str_extract('(?<=-).*(?=([.]csv$))') %>%
+    unique() %>%
+    map(function(annotation) {
+      list.files(dir, pattern = annotation, full.names = T) %>%
+        map_df(plate_gather, annotation)  # see utils.R
+    }) %>%
+    reduce(left_join, by = c('row', 'column', 'plate')) %>%
+    mutate(strain_collection_id = basename(dir)) %>%
+    select(
+      strain_collection_id, strain_id, strain_name, plate, row, column, plate_control, everything()
+    )
+}
+
+
+# Read CM engine log file -------------------------------------------------------------------------
 #' Read CM engine log file.
 #'
 #' Reads ScreenMill Colony Measurement engine log file.
@@ -52,7 +109,7 @@ read_cm <- function(path, replicates, dim = c(2, 3)) {
     select_(~id, ~scan_name, ~scan_cond, ~plate, ~row, ~column, ~replicate, ~size, ~circ)
 }
 
-#------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 #' Read DR stats file.
 #'
 #' Reads ScreenMill Data Review tables.
@@ -141,3 +198,5 @@ read_dr <- function(path, match = 'Query\tCondition\tPlate #\tRow\tColumn') {
             ~size_dr, ~excluded_query, ~excluded_control) %>%
     na.omit
 }
+
+
