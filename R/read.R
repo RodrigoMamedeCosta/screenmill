@@ -141,26 +141,3 @@ read_dr <- function(path, match = 'Query\tCondition\tPlate #\tRow\tColumn') {
             ~size_dr, ~excluded_query, ~excluded_control) %>%
     na.omit
 }
-
-
-#------------------------------------------------------------------------------
-#' Read rothscreen metadata
-#'
-#' A convenience function to read and combine rothscreen metadata
-#'
-#' @param screens Path to screens metadata CSV
-#' @param plates Path to plates metadata CSV
-#'
-#' @importFrom readr read_csv
-#' @export
-
-read_metadata <- function(screens, plates) {
-  scr <- read_csv(screens)
-  plt <- read_csv(plates)
-
-  left_join(plt, scr) %>%
-    mutate_(
-      incubation_end   = ~as.POSIXct(incubation_end),
-      incubation_start = ~as.POSIXct(incubation_start),
-      incubation = ~difftime(incubation_end, incubation_start, units = 'hours'))
-}
