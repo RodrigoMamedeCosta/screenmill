@@ -1,3 +1,83 @@
+#' Read screenmill files in a directory
+#'
+#' @param dir Directory containing screenmill files
+#'
+#' @importFrom readr read_csv col_character col_integer col_logical col_double cols cols_only
+#' @export
+
+read_screenmill <- function(dir) {
+
+  assert_that(
+    is.dir(dir),
+    file.exists(file.path(dir, 'screenmill-collection-keys.csv')),
+    file.exists(file.path(dir, 'screenmill-measurements.csv')),
+    file.exists(file.path(dir, 'screenmill-annotations.csv')),
+    file.exists(file.path(dir, 'screenmill-calibration-grid.csv'))
+  )
+
+  key <- read_csv(
+    file.path(dir, 'screenmill-collection-keys.csv'),
+    col_types = cols( # extra columns allowed
+      strain_collection_id = col_character(),
+      strain_id            = col_character(),
+      strain_name          = col_character(),
+      plate                = col_integer(),
+      row                  = col_integer(),
+      column               = col_integer(),
+      plate_control        = col_logical()
+    )
+  )
+
+  msmt <- read_csv(
+    file.path(dir, 'screenmill-measurements.csv'),
+    col_types = cols_only(
+      strain_collection_id = col_character(),
+      plate_id   = col_character(),
+      plate      = col_integer(),
+      row        = col_integer(),
+      column     = col_integer(),
+      replicate  = col_double(),
+      colony_row = col_integer(),
+      colony_col = col_integer(),
+      colony_num = col_integer(),
+      size       = col_double()
+    )
+  )
+
+  anno <- read_csv(
+    file.path(dir, 'screenmill-annotations.csv'),
+    col_types = cols_only(
+      strain_collection_id = col_character(),
+      template     = col_character(),
+      plate_id     = col_character(),
+      group        = col_integer(),
+      position     = col_integer(),
+      hours_growth = col_double(),
+      timepoint    = col_integer()
+    )
+  )
+
+  grid <- read_csv(
+    file.path(dir, 'screenmill-calibration-grid.csv'),
+    col_types = cols_only(
+      template  = col_character(),
+      position  = col_integer(),
+      group     = col_integer(),
+      plate     = col_integer(),
+      row       = col_integer(),
+      column    = col_integer(),
+      replicate = col_integer(),
+      excluded  = col_logical()
+    )
+  )
+
+  key %>%
+    left_join(msmt) %>%
+    left_join(anno) %>%
+    left_join(grid) %>%
+    filter(!excluded)
+}
+
 # Read plate layout -------------------------------------------------------------------------------
 #' @md
 #' @title Read plate layout
