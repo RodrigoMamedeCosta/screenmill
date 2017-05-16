@@ -258,34 +258,38 @@ rough_crop <- function(img, thresh, invert, pad) {
 
 # Determine plate rotation angle
 #
-# Uses a Radon transform to determine the angle that aligns the colony grid.
-#
 # @param img A rough cropped plate image.
 # @param rough Rough angle in degrees clockwise with which to rotate plate.
 # @param range Rotation range to explore in degrees.
-# @param step Degree increment used in fine rotation.
-#
-# @details The implementation of this function was adapted from Gitter
-#   (see \href{http://www.ncbi.nlm.nih.gov/pubmed/24474170}{PMID:24474170})
 #
 #' @importFrom EBImage rotate fillHull dilate makeBrush resize
 
-grid_angle <- function(img, rough, range, step) {
+grid_angle <- function(img, rough, range) {
 
-  # Apply rough rotate
-  rotated <- EBImage::rotate(img, rough)
-  small <- EBImage::fillHull(EBImage::dilate(EBImage::resize(rotated, h = 200), EBImage::makeBrush(11)))
+  small <- EBImage::rotate(EBImage::resize(img, w = 301, h = 301), rough)
+  objs <-
+    screenmill:::object_features(EBImage::bwlabel(small)) %>%
+    dplyr::filter(
+      area  < mean(area) + (5 * mad(area)),
+      area  > 10,
+      eccen < 0.8
+    ) %>%
+    dplyr::arrange(x, y) %>%
+    # Center grid as point of rotation
+    dplyr::mutate(
+      x = x - 151,
+      y = y - 151
+    )
 
-  # Determine rough rotation angle
-  range <- seq(-range / 2, range / 2, by = step)
-  variance <- sapply(range, function(angle) {
-    #sum(rowSums(rotate(small, angle))^2)
-    var(rowSums(EBImage::rotate(small, angle)))
+  range_deg <- seq(-range / 2, range / 2, by = 0.01)
+  range_rad <- range_deg * (pi / 180) # convert to radians
+  median_abs_diff <- sapply(range_rad, function(theta) {
+    rotated_x <- (objs$x * cos(theta)) - (objs$y * sin(theta))
+    sorted <- sort(rotated_x)
+    median(abs(diff(sorted)))
   })
 
-  #angle <- range[which.min(variance)]
-  spline <- predict(smooth.spline(range, variance), seq(-15, 15, by = 0.01))
-  angle <- spline$x[which.min(spline$y)]
+  angle <- range_deg[which.min(median_abs_diff)]
 
   return(rough + angle)
 }
@@ -300,7 +304,7 @@ grid_angle <- function(img, rough, range, step) {
 # @param invert Invert
 # @param pad Pad
 
-fine_crop <- function(img, rotate, range, step, pad, invert) {
+fine_crop <- function(img, rotate, range, pad, invert) {
 
   # Invert if desired and set lowest intensity pixel to 0
   if (invert) neg <- max(img) - img else neg <- img - min(img)
@@ -310,21 +314,23 @@ fine_crop <- function(img, rotate, range, step, pad, invert) {
   thr <-
     EBImage::gblur(norm, sigma = 6) %>%
     EBImage::thresh(w = 20, h = 20, offset = 0.01)
-  obj <-
-    EBImage::distmap(thr) %>%
-    EBImage::watershed()
+
+  # Determine rotation angle and rotate plate
+  angle   <- screenmill:::grid_angle(thr, rotate, range = range)
+  rotated <- EBImage::rotate(thr, angle)
+
+  obj <- EBImage::bwlabel(rotated)
+
 
   # Calculate object features, identify dubious objects and remove them
-  feat <- object_features(obj)
+  feat <- screenmill:::object_features(obj)
   crap <-
-    feat %>%
-    filter_(~
-      area  > mean(area) + (3 * mad(area)) |
-      area  < 10 |
-      eccen > 0.8 |
-      ndist > mean(ndist) + (3 * mad(ndist))
-    )
-  good  <- filter(feat, !(obj %in% crap$obj))
+    with(feat, feat[
+      area  > mean(area) + (5 * mad(area)) |
+        area  < 10 |
+        eccen > 0.8,
+      ])
+  good  <- with(feat, feat[!(obj %in% crap$obj), ])
   clean <- EBImage::rmObjects(obj, crap$obj) > 0
 
   # If fewer than 20 good objects then use default rotation and no fine-crop
@@ -336,47 +342,38 @@ fine_crop <- function(img, rotate, range, step, pad, invert) {
       )
     return(default)
   }
-  # Brush size for dilation is a little more than the distance to the nearest object
-  # It must be an odd number
-  brush_size <- round(mean(good$ndist) + (5 * mad(good$ndist)))
-  brush_size <- brush_size + (brush_size %% 2 + 1)
-  dilated <- EBImage::dilate(clean, EBImage::makeBrush(brush_size))
-  box <- EBImage::fillHull(dilated)
 
-  # Determine rotation angle and rotate plate
-  angle <- grid_angle(box, rotate, range = range, step = step)
-  rotated <- EBImage::rotate(box, angle)
 
   # Identify edges of grid
-  cols <- grid_breaks(rotated, 'col', thresh = 0.3)
-  if (length(cols) == 0L) cols <- c(1, nrow(rotated)) # don't crop
+  cols <- screenmill:::grid_breaks(clean, 'col', thresh = 0.3)
+  if (length(cols) == 0L) cols <- c(1, nrow(clean)) # don't crop
   if (length(cols) == 1L) {
-    if (cols > nrow(rotated) / 2) {
+    if (cols > nrow(clean) / 2) {
       cols <- c(1, cols)
     } else {
-      cols <- c(cols, nrow(rotated))
+      cols <- c(cols, nrow(clean))
     }
   }
-  rows <- grid_breaks(rotated, 'row', thresh = 0.3)
-  if (length(rows) == 0L) rows <- c(1, ncol(rotated)) # don't crop
+  rows <- screenmill:::grid_breaks(clean, 'row', thresh = 0.3)
+  if (length(rows) == 0L) rows <- c(1, ncol(clean)) # don't crop
   if (length(rows) == 1L) {
-    if (rows > ncol(rotated) / 2) {
+    if (rows > ncol(clean) / 2) {
       rows <- c(1, rows)
     } else {
-      rows <- c(rows, ncol(rotated))
+      rows <- c(rows, ncol(clean))
     }
   }
 
   # Construct fine crop data
-  data_frame(
+  dplyr::data_frame(
     rotate = angle,
     # Adjust edges based on previous dilation and user specified padding
-    left   = head(cols, 1) + (brush_size / 2) - pad[1],
-    right  = tail(cols, 1) - (brush_size / 2) + pad[2],
-    top    = head(rows, 1) + (brush_size / 2) - pad[3],
-    bot    = tail(rows, 1) - (brush_size / 2) + pad[4]
+    left   = head(cols, 1) - pad[1],
+    right  = tail(cols, 1) + pad[2],
+    top    = head(rows, 1) - pad[3],
+    bot    = tail(rows, 1) + pad[4]
   ) %>%
-    mutate_(
+    dplyr::mutate_(
       # Limit edges if they excede dimensions of image after padding
       fine_l = ~ifelse(left < 1, 1, left),
       fine_r = ~ifelse(right > nrow(rotated), nrow(rotated), right),
@@ -388,7 +385,7 @@ fine_crop <- function(img, rotate, range, step, pad, invert) {
       fine_r = ~ifelse(fine_r < nrow(rotated) - 150, nrow(rotated) - 150, fine_r),
       fine_b = ~ifelse(fine_b < ncol(rotated) - 150, ncol(rotated) - 150, fine_b)
     ) %>%
-    select_(~rotate, ~matches('fine'))
+    dplyr::select_(~rotate, ~dplyr::matches('fine'))
 }
 
 

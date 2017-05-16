@@ -4,10 +4,9 @@
 \alias{calibrate}
 \title{Calibrate cropping and rotation parameters}
 \usage{
-calibrate(dir = ".", rotate = 90, range = 2, step = 0.2,
-  thresh = 0.03, invert = TRUE, rough_pad = c(0, 0, 0, 0),
-  fine_pad = c(5, 5, 5, 5), overwrite = FALSE, display = TRUE,
-  save_plate = !display)
+calibrate(dir = ".", rotate = 90, range = 2, thresh = 0.03,
+  invert = TRUE, rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
+  overwrite = FALSE, display = TRUE, save_plate = !display)
 }
 \arguments{
 \item{dir}{Directory of images to process.}
@@ -18,9 +17,6 @@ Defaults to \code{90}.}
 
 \item{range}{Range to explore (in degrees) when calibrating rotation angle.
 Defaults to \code{6}.}
-
-\item{step}{Increment (in degrees) to step when calibrating rotation angle.
-Defaults to \code{0.2}.}
 
 \item{thresh}{Fraction of foreground pixels needed to identify plate
 boundaries when rough cropping. Defaults to \code{0.03}.}
@@ -53,14 +49,6 @@ Crop calibration procedes through the following 3 steps:
 Rough cropping relies on high contrast between plates. If
 \code{invert = TRUE} plates should be light and the region between plates
 should be dark, and vice versa if \code{invert = FALSE}.
-
-Rotation first applies the \code{rotate} argument, then iterates through
-a range of degrees specified by the \code{range} argument with a step
-specified by the \code{step} argument. The image is first thresholded to identify
-objects (i.e. colonies) and the objects are expanded to get a rough shape of
-their location on the plate. The final rotation angle is chosen
-by minimizing the variance of rowwise sums for the range of rotation angles
-explored, which effectively aligns a rectangular shape with the axes.
 
 Fine cropping finds the nearest object edge (problematic for plates without
 any growth on the intended grid edges).

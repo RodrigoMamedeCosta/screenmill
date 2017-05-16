@@ -10,8 +10,6 @@
 #' Defaults to \code{90}.
 #' @param range Range to explore (in degrees) when calibrating rotation angle.
 #' Defaults to \code{6}.
-#' @param step Increment (in degrees) to step when calibrating rotation angle.
-#' Defaults to \code{0.2}.
 #' @param thresh Fraction of foreground pixels needed to identify plate
 #' boundaries when rough cropping. Defaults to \code{0.03}.
 #' @param invert Should the image be inverted? Defaults to \code{TRUE}.
@@ -36,30 +34,21 @@
 #' \code{invert = TRUE} plates should be light and the region between plates
 #' should be dark, and vice versa if \code{invert = FALSE}.
 #'
-#' Rotation first applies the \code{rotate} argument, then iterates through
-#' a range of degrees specified by the \code{range} argument with a step
-#' specified by the \code{step} argument. The image is first thresholded to identify
-#' objects (i.e. colonies) and the objects are expanded to get a rough shape of
-#' their location on the plate. The final rotation angle is chosen
-#' by minimizing the variance of rowwise sums for the range of rotation angles
-#' explored, which effectively aligns a rectangular shape with the axes.
-#'
 #' Fine cropping finds the nearest object edge (problematic for plates without
 #' any growth on the intended grid edges).
 #'
 #' @export
 
-calibrate <- function(dir = '.', rotate = 90, range = 2, step = 0.2,
-                      thresh = 0.03, invert = TRUE, rough_pad = c(0, 0, 0, 0),
-                      fine_pad = c(5, 5, 5, 5), overwrite = FALSE,
-                      display = TRUE, save_plate = !display) {
+calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03,
+                      invert = TRUE, rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
+                      overwrite = FALSE, display = TRUE, save_plate = !display) {
 
   # Save plot parameter defaults. Only necessary for bug in EBImage < 4.13.7
   if (display) { old <- par(no.readonly = TRUE); on.exit(par(old)) }
 
   # Validate input
   assert_that(
-    is.dir(dir), is.number(rotate), is.number(range), is.number(step),
+    is.dir(dir), is.number(rotate), is.number(range),
     is.number(thresh), is.flag(invert), is.flag(display), is.flag(save_plate),
     is.flag(overwrite), is.numeric(rough_pad), length(rough_pad) == 4,
     is.numeric(fine_pad), length(fine_pad) == 4
@@ -103,7 +92,7 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, step = 0.2,
   lapply(
     templates, calibrate_template,
     # Arguments
-    annotation, key, thresh, invert, rough_pad, fine_pad, rotate, range, step,
+    annotation, key, thresh, invert, rough_pad, fine_pad, rotate, range,
     display, crp_path, grd_path, save_plate
   )
 
@@ -128,7 +117,6 @@ calibrate_addin <- function() {
 # @param fine_pad Padding to add around fine crop
 # @param rotate Rough rotation angle in degrees
 # @param range Range of angles to explore in degrees
-# @param step Step interval to explore when optimizing rotation angle
 # @param display Should calibration be displayed
 # @param crp path to crop calibration output
 # @param grd path to grid calibration output
@@ -137,7 +125,7 @@ calibrate_addin <- function() {
 #' @importFrom tibble rownames_to_column
 
 calibrate_template <- function(template, annotation, key, thresh, invert, rough_pad,
-                               fine_pad, rotate, range, step, display, crp, grd, save_plate) {
+                               fine_pad, rotate, range, display, crp, grd, save_plate) {
 
   # Read image in greyscale format
   message(basename(template), ': reading image and cropping plates')
@@ -147,30 +135,36 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
   anno <- annotation[which(annotation$template == template), ]
 
   # Determine rough crop coordinates and apply to this image
-  rough <- screenmill:::rough_crop(img, thresh, invert, rough_pad) %>% mutate_(template = ~basename(template))
+  rough <- screenmill:::rough_crop(img, thresh, invert, rough_pad)
+  rough$template <- basename(template)
+
   if (nrow(rough) > length(anno$position)) warning('For ', basename(template), ', keeping positions (', paste(anno$position, collapse = ', '), ') of ', nrow(rough), ' available.', call. = FALSE)
+
   if (display) screenmill:::display_rough_crop(img, rough, 'red')
-  plates <- lapply(1:length(anno$position), function(i) {
-    p <- anno$position[i]
-    with(rough[rough$position == p, ], img[ rough_l:rough_r, rough_t:rough_b ])
-  })
+
+  plates <-
+    lapply(1:length(anno$position), function(i) {
+      p <- anno$position[i]
+      with(rough[rough$position == p, ], img[ rough_l:rough_r, rough_t:rough_b ])
+    })
 
   # Determine fine crop coordinates
-  progress <- progress_estimated(length(anno$position))
+  progress <- dplyr::progress_estimated(length(anno$position))
   fine <-
-    lapply(1:length(anno$position), function(i) {
+    purrr::map_df(1:length(anno$position), function(i) {
       progress$tick()$print()
       p <- anno$position[i]
-      screenmill:::fine_crop(plates[[i]], rotate, range, step, fine_pad, invert) %>%
-        mutate(template = basename(template), position = p)
-    }) %>%
-    bind_rows
+      result <- screenmill:::fine_crop(plates[[i]], rotate, range, fine_pad, invert)
+      result$template <- basename(template)
+      result$position <- p
+      return(result)
+    })
 
   # Determine grid coordinates
   message(basename(template), ': locating colony grid')
   progress <- progress_estimated(length(anno$position))
   grid <-
-    lapply(1:length(anno$position), function(i) {
+    map_df(1:length(anno$position), function(i) {
       progress$tick()$print()
       p                <- anno$position[i]
       collection_id    <- anno$strain_collection_id[i]
@@ -260,8 +254,7 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
       if (display || save_plate) display_plate(cropped, result, template, group, p, text.color = 'red', grid.color = 'blue', save_plate)
 
       return(result)
-    }) %>%
-    bind_rows
+    })
 
   # Combine rough and fine crop coordinates
   crop <-
