@@ -13,14 +13,10 @@ review <- function(dir = '.') {
   if (!(file.exists(crop_path) & file.exists(grid_path))) {
     stop('Please annotate and calibrate before reviewing.')
   }
-  crop <- readr::read_csv(crop_path, col_types = 'ciiidddddddddddl')
+  crop <- screenmill:::read_crop(crop_path)
   init <-
-    readr::read_csv(grid_path, col_types = 'ciiciiidiiiiiiii') %>%
+    screenmill:::read_grid(grid_path) %>%
     left_join(crop, by = c('template', 'position'))
-
-  if (!has_name(init, 'excluded')) {
-    init <- mutate(init, excluded = FALSE)
-  }
 
   grouping <- paste(init$template, init$position)
   exit <- length(unique(grouping))

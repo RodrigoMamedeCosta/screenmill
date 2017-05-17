@@ -72,10 +72,104 @@ read_screenmill <- function(dir) {
   )
 
   key %>%
-    left_join(msmt) %>%
-    left_join(anno) %>%
-    left_join(grid) %>%
+    left_join(msmt, by = c('strain_collection_id', 'plate', 'row', 'column')) %>%
+    left_join(anno, by = c('strain_collection_id', 'plate_id')) %>%
+    left_join(grid, by = c('plate', 'row', 'column', 'excluded', 'replicate', 'group', 'position', 'template')) %>%
     filter(!excluded)
+}
+
+read_annotation <- function(path) {
+  read_csv(
+    path,
+    col_types = cols( # additional columns are retained and type will be guessed
+      plate_id             = readr::col_character(),
+      date                 = readr::col_date(),
+      group                = readr::col_integer(),
+      position             = readr::col_integer(),
+      timepoint            = readr::col_integer(),
+      hours_growth         = readr::col_double(),
+      file                 = readr::col_character(),
+      template             = readr::col_character(),
+      strain_collection_id = readr::col_character(),
+      plate                = readr::col_integer(),
+      query_id             = readr::col_character(),
+      treatment_id         = readr::col_character(),
+      media_id             = readr::col_character(),
+      temperature          = readr::col_double(),
+      time_series          = readr::col_character(),
+      end                  = readr::col_datetime(),
+      start                = readr::col_datetime(),
+      owner                = readr::col_character(),
+      email                = readr::col_character(),
+      .default             = readr::col_guess()
+    )
+  )
+}
+
+read_key <- function(path) {
+  read_csv(
+    path,
+    col_types = cols( # additional columns are retained and type will be guessed
+      strain_collection_id = readr::col_character(),
+      strain_id            = readr::col_character(),
+      strain_name          = readr::col_character(),
+      plate                = readr::col_integer(),
+      row                  = readr::col_integer(),
+      column               = readr::col_integer(),
+      plate_control        = readr::col_logical(),
+      .default             = readr::col_guess()
+    )
+  )
+}
+
+read_crop <- function(path) {
+  read_csv(
+    path,
+    col_types = cols( # additional columns are retained and type will be guessed
+      template  = readr::col_character(),
+      position  = readr::col_integer(),
+      plate_row = readr::col_integer(),
+      plate_col = readr::col_integer(),
+      plate_x   = readr::col_integer(),
+      plate_y   = readr::col_integer(),
+      rough_l   = readr::col_integer(),
+      rough_r   = readr::col_integer(),
+      rough_t   = readr::col_integer(),
+      rough_b   = readr::col_integer(),
+      rotate    = readr::col_double(),
+      fine_l    = readr::col_integer(),
+      fine_r    = readr::col_integer(),
+      fine_t    = readr::col_integer(),
+      fine_b    = readr::col_integer(),
+      invert    = readr::col_logical(),
+      .default  = readr::col_guess()
+    )
+  )
+}
+
+read_grid <- function(path) {
+  read_csv(
+    path,
+    col_types = cols( # additional columns are retained and type will be guessed
+      template             = readr::col_character(),
+      position             = readr::col_integer(),
+      group                = readr::col_integer(),
+      strain_collection_id = readr::col_character(),
+      plate                = readr::col_integer(),
+      row                  = readr::col_integer(),
+      column               = readr::col_integer(),
+      replicate            = readr::col_integer(),
+      colony_row           = readr::col_integer(),
+      colony_col           = readr::col_integer(),
+      x                    = readr::col_integer(),
+      y                    = readr::col_integer(),
+      l                    = readr::col_integer(),
+      r                    = readr::col_integer(),
+      t                    = readr::col_integer(),
+      b                    = readr::col_integer(),
+      .default             = readr::col_guess()
+    )
+  )
 }
 
 # Read plate layout -------------------------------------------------------------------------------

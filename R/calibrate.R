@@ -43,9 +43,6 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03,
                       invert = TRUE, rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
                       overwrite = FALSE, display = TRUE, save_plate = !display) {
 
-  # Save plot parameter defaults. Only necessary for bug in EBImage < 4.13.7
-  if (display) { old <- par(no.readonly = TRUE); on.exit(par(old)) }
-
   # Validate input
   assert_that(
     is.dir(dir), is.number(rotate), is.number(range),
@@ -76,12 +73,12 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03,
 
   # Get paths to templates relative to dir, and corresponding plate positions
   annotation <-
-    read_csv(plt_path, col_types = 'cDiiidcccicccdcTTcc') %>%
+    read_annotation(plt_path) %>%
     select(template, group, position, strain_collection_id, plate) %>%
     mutate(template = paste(dir, template, sep = '/')) %>%
     distinct
 
-  key <- read_csv(key_path, col_types = 'cccciiil')
+  key <- read_key(key_path)
 
   templates <- unique(annotation$template)
 
@@ -261,6 +258,8 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
     left_join(rough, fine, by = c('template', 'position')) %>%
     mutate_(invert = ~invert) %>%
     select_(~template, ~position, ~everything())
+
+  grid$excluded <- FALSE
 
   # Write results to file
   write_csv(crop, crp, append = file.exists(crp))
