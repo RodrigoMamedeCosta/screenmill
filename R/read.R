@@ -47,6 +47,7 @@ read_screenmill <- function(dir) {
   anno <- read_csv(
     file.path(dir, 'screenmill-annotations.csv'),
     col_types = cols_only(
+      date         = col_character()
       strain_collection_id = col_character(),
       template     = col_character(),
       plate_id     = col_character(),
