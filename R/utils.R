@@ -319,8 +319,8 @@ fine_crop <- function(img, rotate, range, pad, invert) {
   angle   <- screenmill:::grid_angle(thr, rotate, range = range)
   rotated <- EBImage::rotate(thr, angle)
 
-  obj <- EBImage::bwlabel(rotated)
-
+  # obj <- EBImage::bwlabel(rotated)
+  obj <- EBImage::watershed(EBImage::distmap(rotated))
 
   # Calculate object features, identify dubious objects and remove them
   feat <- screenmill:::object_features(obj)
