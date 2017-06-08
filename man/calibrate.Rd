@@ -6,7 +6,8 @@
 \usage{
 calibrate(dir = ".", rotate = 90, range = 2, thresh = 0.03,
   invert = TRUE, rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
-  overwrite = FALSE, display = TRUE, save_plate = !display)
+  default_crop = NULL, overwrite = FALSE, display = TRUE,
+  save_plate = !display)
 }
 \arguments{
 \item{dir}{Directory of images to process.}
@@ -16,13 +17,16 @@ rotation angle will be further calibrated after applying this rotation.
 Defaults to \code{90}.}
 
 \item{range}{Range to explore (in degrees) when calibrating rotation angle.
-Defaults to \code{6}.}
+Defaults to \code{2}.}
 
 \item{thresh}{Fraction of foreground pixels needed to identify plate
 boundaries when rough cropping. Defaults to \code{0.03}.}
 
 \item{invert}{Should the image be inverted? Defaults to \code{TRUE}.
 Recommended \code{TRUE} if colonies are darker than the plate.}
+
+\item{default_crop}{If not \code{NULL} then use this dataframe as the
+default crop coordinates.}
 
 \item{overwrite}{Should existing crop calibration be overwritten?
 Defaults to \code{FALSE}.}

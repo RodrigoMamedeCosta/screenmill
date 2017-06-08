@@ -9,11 +9,13 @@
 #' rotation angle will be further calibrated after applying this rotation.
 #' Defaults to \code{90}.
 #' @param range Range to explore (in degrees) when calibrating rotation angle.
-#' Defaults to \code{6}.
+#' Defaults to \code{2}.
 #' @param thresh Fraction of foreground pixels needed to identify plate
 #' boundaries when rough cropping. Defaults to \code{0.03}.
 #' @param invert Should the image be inverted? Defaults to \code{TRUE}.
 #' Recommended \code{TRUE} if colonies are darker than the plate.
+#' @param default_crop If not \code{NULL} then use this dataframe as the
+#' default crop coordinates.
 #' @param overwrite Should existing crop calibration be overwritten?
 #' Defaults to \code{FALSE}.
 #' @param display Should cropped images be displayed for review?
@@ -39,8 +41,9 @@
 #'
 #' @export
 
-calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03,
-                      invert = TRUE, rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
+calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert = TRUE,
+                      rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
+                      default_crop = NULL,
                       overwrite = FALSE, display = TRUE, save_plate = !display) {
 
   # Validate input
@@ -90,7 +93,7 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03,
     templates, calibrate_template,
     # Arguments
     annotation, key, thresh, invert, rough_pad, fine_pad, rotate, range,
-    display, crp_path, grd_path, save_plate
+    display, crp_path, grd_path, save_plate, default_crop
   )
 
   message('Finished calibration in ', format(round(Sys.time() - time, 2)))
@@ -122,7 +125,8 @@ calibrate_addin <- function() {
 #' @importFrom tibble rownames_to_column
 
 calibrate_template <- function(template, annotation, key, thresh, invert, rough_pad,
-                               fine_pad, rotate, range, display, crp, grd, save_plate) {
+                               fine_pad, rotate, range, display, crp, grd, save_plate,
+                               default_crop) {
 
   # Read image in greyscale format
   message(basename(template), ': reading image and cropping plates')
@@ -131,9 +135,13 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
   # Filter annotation data for this template
   anno <- annotation[which(annotation$template == template), ]
 
-  # Determine rough crop coordinates and apply to this image
-  rough <- screenmill:::rough_crop(img, thresh, invert, rough_pad)
-  rough$template <- basename(template)
+  if (is.null(default_crop)) {
+    # Determine rough crop coordinates and apply to this image
+    rough <- screenmill:::rough_crop(img, thresh, invert, rough_pad)
+    rough$template <- basename(template)
+  } else {
+    rough <- select_(default_crop, ~position, ~plate_row, ~plate_col, ~plate_x, ~plate_y, ~rough_l, ~rough_r, ~rough_t, ~rough_b)
+  }
 
   if (nrow(rough) > length(anno$position)) warning('For ', basename(template), ', keeping positions (', paste(anno$position, collapse = ', '), ') of ', nrow(rough), ' available.', call. = FALSE)
 
@@ -146,16 +154,26 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
     })
 
   # Determine fine crop coordinates
-  progress <- dplyr::progress_estimated(length(anno$position))
-  fine <-
-    purrr::map_df(1:length(anno$position), function(i) {
-      progress$tick()$print()
-      p <- anno$position[i]
-      result <- screenmill:::fine_crop(plates[[i]], rotate, range, fine_pad, invert)
-      result$template <- basename(template)
-      result$position <- p
-      return(result)
-    })
+  if (is.null(default_crop)) {
+    progress <- dplyr::progress_estimated(length(anno$position))
+    fine <-
+      purrr::map_df(1:length(anno$position), function(i) {
+        progress$tick()$print()
+        p <- anno$position[i]
+        result <- screenmill:::fine_crop(plates[[i]], rotate, range, fine_pad, invert)
+        result$template <- basename(template)
+        result$position <- p
+        return(result)
+      })
+  } else {
+    fine <- select_(default_crop, ~rotate, ~dplyr::matches('fine'))
+  }
+
+  # Combine rough and fine crop coordinates
+  crop <-
+    left_join(rough, fine, by = c('template', 'position')) %>%
+    mutate_(invert = ~invert) %>%
+    select_(~template, ~position, ~everything())
 
   # Determine grid coordinates
   message(basename(template), ': locating colony grid')
@@ -252,12 +270,6 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
 
       return(result)
     })
-
-  # Combine rough and fine crop coordinates
-  crop <-
-    left_join(rough, fine, by = c('template', 'position')) %>%
-    mutate_(invert = ~invert) %>%
-    select_(~template, ~position, ~everything())
 
   grid$excluded <- FALSE
 
