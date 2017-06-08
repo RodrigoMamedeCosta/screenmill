@@ -251,7 +251,11 @@ rough_crop <- function(img, thresh, invert, pad) {
       abs(rough_l - rough_r) > 100,
       abs(rough_t - rough_b) > 100
     ) %>%
-    mutate(position = 1:n()) %>%
+    mutate(
+      position = 1:n(),
+      plate_x = as.integer(round(plate_x)),
+      plate_y = as.integer(round(plate_y))
+    ) %>%
     select_(~position, ~plate_row, ~plate_col, ~plate_x, ~plate_y, ~rough_l, ~rough_r, ~rough_t, ~rough_b)
 }
 
