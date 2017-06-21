@@ -519,10 +519,7 @@ display_calibration <- function(dir = '.', groups = NULL, positions = NULL) {
     coords <- calibration[which(calibration$file == basename(file)), ]
 
     # Read as greyscale image
-    img <- EBImage::readImage(file)
-    if (EBImage::colorMode(img)) {
-      img <- EBImage::channel(img, 'luminance')
-    }
+    img <- read_greyscale(file)
 
     # Apply Crop calibration
     lapply(1:nrow(coords), function(p) {

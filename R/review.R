@@ -79,7 +79,7 @@ review <- function(dir = '.') {
 
         # Read raw image if different from previous plate
         if (is.null(previous) || crop$template != previous) {
-          react$image   <- EBImage::readImage(file.path(dir, crop$template, fsep = '/'))
+          react$image <- read_greyscale(file.path(dir, crop$template, fsep = '/'))
         }
         # Generate plate image from raw image
         rough   <- with(crop, react$image[ rough_l:rough_r, rough_t:rough_b ])
