@@ -33,3 +33,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+
+static const R_CallMethodDef CallEntries[] = {
+    {"screenmill_measureColonies", (DL_FUNC) &screenmill_measureColonies, 6},
+    {"screenmill_nearestNeighbor", (DL_FUNC) &screenmill_nearestNeighbor, 2},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_screenmill(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+}
