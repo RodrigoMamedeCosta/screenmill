@@ -49,6 +49,9 @@ read_screenmill <- function(dir) {
     col_types = cols_only(
       date         = col_character(),
       strain_collection_id = col_character(),
+      query_id     = col_character(),
+      treatment_id = col_character(),
+      media_id     = col_character(),
       template     = col_character(),
       plate_id     = col_character(),
       group        = col_integer(),
@@ -72,11 +75,40 @@ read_screenmill <- function(dir) {
     )
   )
 
+  quer <- read_csv(
+    file.path(dir, 'screenmill-queries.csv'),
+    col_types = cols_only(
+      query_id         = col_character(),
+      query_name       = col_character(),
+      control_query_id = col_character()
+    )
+  )
+
+  trea <- read_csv(
+    file.path(dir, 'screenmill-treatments.csv'),
+    col_types = cols_only(
+      treatment_id         = col_character(),
+      treatment_name       = col_character(),
+      control_treatment_id = col_character()
+    )
+  )
+
   key %>%
     left_join(msmt, by = c('strain_collection_id', 'plate', 'row', 'column')) %>%
     left_join(anno, by = c('strain_collection_id', 'plate_id')) %>%
-    left_join(grid, by = c('plate', 'row', 'column', 'excluded', 'replicate', 'group', 'position', 'template')) %>%
-    filter(!excluded)
+    left_join(grid, by = c('plate', 'row', 'column', 'replicate', 'group', 'position', 'template')) %>%
+    left_join(quer, by = 'query_id') %>%
+    left_join(trea, by = 'treatment_id') %>%
+    filter(!excluded) %>%
+    select(
+      plate_id, hours_growth, size,
+      strain_name, query_name, treatment_name,
+      strain_id, gene_id, query_id, treatment_id, media_id,
+      control_query_id, control_treatment_id, plate_control,
+      date, group, position, timepoint,
+      strain_collection_id, plate, row, column, replicate,
+      colony_row, colony_col, colony_num
+    )
 }
 
 read_annotation <- function(path) {
