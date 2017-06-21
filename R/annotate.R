@@ -340,7 +340,7 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
           do(data_frame(position = 1:.$positions[1])) %>%
           ungroup %>%
           left_join(vars$tbl3, by = c('group', 'template', 'position')) %>%
-          mutate_each(funs(ifelse(is.na(.), '', .)))
+          mutate_all(funs(ifelse(is.na(.), '', .)))
         vars$tbl3
       } else {
         vars$tbl3 <- hot_to_r(input$tbl3) %>% filter(complete.cases(.))
@@ -376,7 +376,7 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
         left_join(tbl1(), by = 'file') %>%
         left_join(tbl2(), by = 'group') %>%
         left_join(tbl3(), by = c('group', 'template')) %>%
-        mutate_each(funs(ifelse(. == '', NA, .))) %>% # replace empty string with NA
+        mutate_all(funs(ifelse(. == '', NA, .))) %>% # replace empty string with NA
         mutate(
           plate = as.integer(plate),
           date = as.Date(start),
