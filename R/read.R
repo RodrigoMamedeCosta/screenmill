@@ -52,6 +52,7 @@ read_screenmill <- function(dir) {
       query_id     = col_character(),
       treatment_id = col_character(),
       media_id     = col_character(),
+      temperature  = col_double(),
       template     = col_character(),
       plate_id     = col_character(),
       group        = col_integer(),
@@ -103,7 +104,7 @@ read_screenmill <- function(dir) {
     select(
       plate_id, hours_growth, size,
       strain_name, query_name, treatment_name,
-      strain_id, gene_id, query_id, treatment_id, media_id,
+      strain_id, gene_id, query_id, treatment_id, media_id, temperature
       control_query_id, control_treatment_id, plate_control,
       date, group, position, timepoint,
       strain_collection_id, plate, row, column, replicate,
