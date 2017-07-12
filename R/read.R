@@ -104,7 +104,7 @@ read_screenmill <- function(dir) {
     select(
       plate_id, hours_growth, size,
       strain_name, query_name, treatment_name,
-      strain_id, gene_id, query_id, treatment_id, media_id, temperature,
+      strain_id, query_id, treatment_id, media_id, temperature,
       control_query_id, control_treatment_id, plate_control,
       date, group, position, timepoint,
       strain_collection_id, plate, row, column, replicate,
