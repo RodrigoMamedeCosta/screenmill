@@ -108,7 +108,8 @@ read_screenmill <- function(dir) {
       control_query_id, control_treatment_id, plate_control,
       date, group, position, timepoint,
       strain_collection_id, plate, row, column, replicate,
-      colony_row, colony_col, colony_num
+      colony_row, colony_col, colony_num,
+      everything()
     )
 }
 
