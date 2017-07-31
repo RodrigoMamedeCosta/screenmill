@@ -101,7 +101,10 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
 
   # Initialize lookup tables if missing
   use_db <- requireNamespace('rothfreezer', quietly = T)
-  if (use_db) db <- rothfreezer::src_rothfreezer()
+  if (use_db) {
+    db <- rothfreezer::src_rothfreezer()
+    on.exit(DBI::dbDisconnect(db$con))
+  }
   if (missing(strain_collection_keys)) {
     strain_collection_keys <- getOption(
       'screenmill.strain_collection_keys',
