@@ -210,12 +210,13 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
         replicates <- nrow(result) / nrow(keyi)
 
         if (sqrt(replicates) %% 1 != 0) {
+          result <- NULL
           warning(
             'Size of detected colony grid (', nrow(result), ') for ',
             basename(template), ' at position ', p,
             ' is not a square multiple of the number of annotated positions (',
             nrow(keyi), ') present in the key for ', collection_id,
-            ' plate #', collection_plate, '.', call. = FALSE
+            ' plate #', collection_plate, '. This plate position has been skipped', call. = FALSE
           )
         } else {
           # Annotate with key row/column/replicate values
