@@ -37,7 +37,7 @@ screenmill_status <- function(dir,
       reviewed   = file.exists(paths[10])
     ),
     path = list(
-      annotation       = paths[1],
+      annotations      = paths[1],
       collection_keys  = paths[2],
       collections      = paths[3],
       media            = paths[4],

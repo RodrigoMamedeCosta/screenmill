@@ -404,7 +404,7 @@ annotate <- function(dir = '.', queries,
 
       # ---- Write tables to file ----
       annotations %>%
-        write_csv(target)
+        write_csv(status$path$annotations)
 
       strain_collections %>%
         filter(strain_collection_id %in% (annotations$strain_collection_id)) %>%
