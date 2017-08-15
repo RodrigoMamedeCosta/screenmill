@@ -1,16 +1,35 @@
+
+#' Interactive colony review tool
+#'
+#' Manually exclude regions of plates with contamination or obvious mispinnings.
+#'
+#' @param dir Directory of images to process.
+#' @param overwrite Should existing crop calibration be overwritten?
+#' Defaults to \code{FALSE}.
+#'
 #' @export
 
-review <- function(dir = '.') {
+review <- function(dir = '.', overwrite = FALSE) {
 
   status <- screenmill_status(dir)
 
   if (!(status$annotated & status$calibrated)) {
     stop('Please annotate and calibrate before reviewing.')
   }
-  crop <- read_calibration_crop(dir)
+
+  grid <- read_calibration_grid(dir)
+
+  if (!overwrite && status$reviewed) {
+    message('This batch has already been reviewed. Set "overwrite = TRUE" to re-review.')
+    return(invisible(status$dir))
+  }
+
   init <-
-    read_calibration_grid(dir) %>%
-    left_join(crop, by = c('template', 'position'))
+    left_join(
+      grid,
+      read_calibration_crop(dir),
+      by = c('template', 'position')
+    )
 
   grouping <- paste(init$template, init$position)
   exit <- length(unique(grouping))
@@ -35,6 +54,7 @@ review <- function(dir = '.') {
       bind_rows(react$final) %>%
         select(template:b, excluded) %>%
         readr::write_csv(status$path$calibration_grid)
+      readr::write_csv(data.frame(timestamp = Sys.time()), append = TRUE)
       stopApp(invisible(dir))
     })
 
@@ -45,6 +65,7 @@ review <- function(dir = '.') {
         bind_rows(react$final) %>%
           select(template:b, excluded) %>%
           readr::write_csv(status$path$calibration_grid)
+        readr::write_csv(data.frame(timestamp = Sys.time()), append = TRUE)
         stopApp(invisible(dir))
       }
       updateSliderInput(session, 'plate', value = n)
