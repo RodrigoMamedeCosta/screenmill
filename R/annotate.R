@@ -531,7 +531,8 @@ annotate <- function(dir = '.', queries,
 
 
   # ---- Run ----
-  runGadget(ui, server, viewer = dialogViewer('New Screen', width = 1100, height = 1000))
+  #runGadget(ui, server, viewer = dialogViewer('New Screen', width = 1100, height = 1000))
+  runGadget(ui, server, viewer = browserViewer())
 }
 
 
