@@ -1,106 +1,39 @@
 #' Read screenmill files in a directory
 #'
-#' @param dir Directory containing screenmill files
+#' @param dir Directory containing screenmill files.
+#' @param file File name with extension (not typically necessary as defaults are provided).
 #'
+#' @name read_screenmill
+#' @rdname read_screenmill
 #' @importFrom readr read_csv col_character col_integer col_logical col_double cols cols_only
 #' @export
 
 read_screenmill <- function(dir) {
 
-  assert_that(
-    is.dir(dir),
-    file.exists(file.path(dir, 'screenmill-collection-keys.csv')),
-    file.exists(file.path(dir, 'screenmill-measurements.csv')),
-    file.exists(file.path(dir, 'screenmill-annotations.csv')),
-    file.exists(file.path(dir, 'screenmill-calibration-grid.csv'))
-  )
+  assert_that(assertthat::is.dir(dir), assertthat::is.readable(dir))
 
-  key <- read_csv(
-    file.path(dir, 'screenmill-collection-keys.csv'),
-    col_types = cols( # extra columns allowed
-      strain_collection_id = col_character(),
-      strain_id            = col_character(),
-      strain_name          = col_character(),
-      plate                = col_integer(),
-      row                  = col_integer(),
-      column               = col_integer(),
-      plate_control        = col_logical()
-    )
-  )
-
-  msmt <- read_csv(
-    file.path(dir, 'screenmill-measurements.csv'),
-    col_types = cols_only(
-      strain_collection_id = col_character(),
-      plate_id   = col_character(),
-      plate      = col_integer(),
-      row        = col_integer(),
-      column     = col_integer(),
-      replicate  = col_double(),
-      colony_row = col_integer(),
-      colony_col = col_integer(),
-      colony_num = col_integer(),
-      size       = col_double()
-    )
-  )
-
-  anno <- read_csv(
-    file.path(dir, 'screenmill-annotations.csv'),
-    col_types = cols_only(
-      date         = col_character(),
-      strain_collection_id = col_character(),
-      query_id     = col_character(),
-      treatment_id = col_character(),
-      media_id     = col_character(),
-      temperature  = col_double(),
-      template     = col_character(),
-      plate_id     = col_character(),
-      group        = col_integer(),
-      position     = col_integer(),
-      hours_growth = col_double(),
-      timepoint    = col_integer()
-    )
-  )
-
-  grid <- read_csv(
-    file.path(dir, 'screenmill-calibration-grid.csv'),
-    col_types = cols_only(
-      template  = col_character(),
-      position  = col_integer(),
-      group     = col_integer(),
-      plate     = col_integer(),
-      row       = col_integer(),
-      column    = col_integer(),
-      replicate = col_integer(),
-      excluded  = col_logical()
-    )
-  )
-
-  quer <- read_csv(
-    file.path(dir, 'screenmill-queries.csv'),
-    col_types = cols_only(
-      query_id         = col_character(),
-      query_name       = col_character(),
-      control_query_id = col_character()
-    )
-  )
-
-  trea <- read_csv(
-    file.path(dir, 'screenmill-treatments.csv'),
-    col_types = cols_only(
-      treatment_id         = col_character(),
-      treatment_name       = col_character(),
-      control_treatment_id = col_character()
-    )
-  )
-
-  key %>%
-    left_join(msmt, by = c('strain_collection_id', 'plate', 'row', 'column')) %>%
-    left_join(anno, by = c('strain_collection_id', 'plate_id')) %>%
-    left_join(grid, by = c('plate', 'row', 'column', 'replicate', 'group', 'position', 'template')) %>%
-    left_join(quer, by = 'query_id') %>%
-    left_join(trea, by = 'treatment_id') %>%
-    filter(!excluded) %>%
+  strain_collections(dir) %>%
+    left_join(
+      read_collections_key(dir) %>% select(excluded_key = excluded),
+      by = c('strain_collection_id', 'plate', 'row', 'column')
+    ) %>%
+    left_join(
+      read_annotations(dir),
+      by = c('strain_collection_id', 'plate_id')
+    ) %>%
+    left_join(
+      read_calibration_grid(dir),
+      by = c('plate', 'row', 'column', 'replicate', 'group', 'position', 'template')
+    ) %>%
+    left_join(
+      read_queries(dir),
+      by = 'query_id'
+    ) %>%
+    left_join(
+      read_treatments(dir),
+      by = 'treatment_id'
+    ) %>%
+    filter(!excluded & !excluded_key) %>%
     select(
       plate_id, hours_growth, size,
       strain_name, query_name, treatment_name,
@@ -113,10 +46,13 @@ read_screenmill <- function(dir) {
     )
 }
 
-read_annotation <- function(path) {
-  read_csv(
-    path,
-    col_types = cols( # additional columns are retained and type will be guessed
+#' @rdname read_screenmill
+#' @export
+
+read_annotations <- function(dir, file = 'screenmill-annotations.csv') {
+  anno <- read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
       plate_id             = readr::col_character(),
       date                 = readr::col_date(),
       group                = readr::col_integer(),
@@ -135,15 +71,20 @@ read_annotation <- function(path) {
       end                  = readr::col_datetime(),
       start                = readr::col_datetime(),
       owner                = readr::col_character(),
-      email                = readr::col_character(),
-      .default             = readr::col_guess()
+      email                = readr::col_character()
     )
   )
+
+  validate_annotations(anno)
+  return(anno)
 }
 
-read_key <- function(path) {
+#' @rdname read_screenmill
+#' @export
+
+read_collection_keys <- function(dir, file = 'screenmill-collection-keys.csv') {
   read_csv(
-    path,
+    file.path(dir, file),
     col_types = cols( # additional columns are retained and type will be guessed
       strain_collection_id = readr::col_character(),
       strain_id            = readr::col_character(),
@@ -152,15 +93,32 @@ read_key <- function(path) {
       row                  = readr::col_integer(),
       column               = readr::col_integer(),
       plate_control        = readr::col_logical(),
+      excluded             = readr::col_logical(),
       .default             = readr::col_guess()
     )
   )
 }
 
-read_crop <- function(path) {
+#' @rdname read_screenmill
+#' @export
+
+read_collections <- function(dir, file = 'screenmill-collections.csv') {
   read_csv(
-    path,
-    col_types = cols( # additional columns are retained and type will be guessed
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
+      strain_collection_id = readr::col_character(),
+      description          = readr::col_character()
+    )
+  )
+}
+
+#' @rdname read_screenmill
+#' @export
+
+read_calibration_crop <- function(dir, file = 'screenmill-calibration-crop-csv') {
+  read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
       template  = readr::col_character(),
       position  = readr::col_integer(),
       plate_row = readr::col_integer(),
@@ -176,16 +134,20 @@ read_crop <- function(path) {
       fine_r    = readr::col_integer(),
       fine_t    = readr::col_integer(),
       fine_b    = readr::col_integer(),
-      invert    = readr::col_logical(),
-      .default  = readr::col_guess()
+      invert    = readr::col_logical()
     )
   )
 }
 
-read_grid <- function(path) {
-  read_csv(
-    path,
-    col_types = cols( # additional columns are retained and type will be guessed
+#' @rdname read_screenmill
+#' @export
+
+read_calibration_grid <- function(dir, file = 'screenmill-calibration-grid.csv') {
+
+  grid <-
+    read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
       template             = readr::col_character(),
       position             = readr::col_integer(),
       group                = readr::col_integer(),
@@ -202,7 +164,84 @@ read_grid <- function(path) {
       r                    = readr::col_integer(),
       t                    = readr::col_integer(),
       b                    = readr::col_integer(),
-      .default             = readr::col_guess()
+      excluded             = readr::col_logical()
+    )
+  )
+
+  # Key exclusions will always propagate to the grid calibration file.
+  keys <-
+    read_collection_keys(dir) %>%
+    select(strain_collection_id, plate, row, column, excluded_key = excluded)
+
+  left_join(
+    grid,
+    keys,
+    by = c('strain_collection_id', 'plate', 'row', 'column')
+  ) %>%
+  mutate(excluded = excluded_key | excluded)
+}
+
+#' @rdname read_screenmill
+#' @export
+
+read_measurements <- function(dir, file = 'screenmill-measurements.csv') {
+  read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
+      plate_id = readr::col_character(),
+      strain_collection_id = readr::col_character(),
+      plate                = readr::col_integer(),
+      row                  = readr::col_integer(),
+      column               = readr::col_integer(),
+      replicate            = readr::col_integer(),
+      colony_row           = readr::col_integer(),
+      colony_col           = readr::col_integer(),
+      colony_num           = readr::col_integer(),
+      size                 = readr::col_double()
+    )
+  )
+}
+
+#' @rdname read_screenmill
+#' @export
+
+read_queries <- function(dir, file = 'screenmill-queries.csv') {
+  read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
+      query_id = readr::col_character(),
+      query_name = readr::col_character(),
+      query_annotation = readr::col_character(),
+      control_query_id = readr::col_character()
+    )
+  )
+}
+
+#' @rdname read_screenmill
+#' @export
+
+read_treatments <- function(dir, file = 'screenmill-treatments.csv') {
+  read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
+      treatment_id          = readr::col_character(),
+      treatment_name        = readr::col_character(),
+      control_treatment_id  = readr::col_character(),
+      treatment_description = readr::col_character()
+    )
+  )
+}
+
+#' @rdname read_screenmill
+#' @export
+
+read_media <- function(dir, file = 'screenmill-media.csv') {
+  read_csv(
+    file.path(dir, file),
+    col_types = cols_only( # strict columns
+      media_id          = readr::col_character(),
+      media_name        = readr::col_character(),
+      media_description = readr::col_character()
     )
   )
 }
@@ -230,13 +269,13 @@ read_grid <- function(path) {
 #' - **strain_id** - The strain identifier.
 #' - **strain_name** - The human-readable name of the strain.
 #' - **plate_control** - (T/F) is position intended to be used as a control for plate normalization?
+#' - *excluded* - positions to exclude from analysis.
 #'
 #' These tables are recommended (depending on the experiment):
 #'
 #' - *plasmid_id* - A plasmid identifier
 #' - *OD600* - The culture density used for pinning.
 #' - *pinnings* - The number of pinnings from source plate to target plate.
-#' - *excluded* - positions to exclude from analysis.
 #' - *start_temp* - The starting temperature at the beginning of the experiment.
 #' - *end_temp* - The ending temperature at the end of the experiment.
 #' - *start_humidity* - The starting humidity at the beginning of the experiment.
@@ -259,7 +298,7 @@ read_plate_layout <- function(dir) {
     reduce(left_join, by = c('row', 'column', 'plate')) %>%
     mutate(strain_collection_id = basename(dir)) %>%
     select(
-      strain_collection_id, strain_id, strain_name, plate, row, column, plate_control, everything()
+      strain_collection_id, strain_id, strain_name, plate, row, column, plate_control, excluded, everything()
     )
 }
 
@@ -409,3 +448,23 @@ read_dr <- function(path, match = 'Query\tCondition\tPlate #\tRow\tColumn') {
 }
 
 
+# ---- Validators ----
+
+validate_annotations <- function(x) {
+  counts <- x %>%
+    select(file, end, group) %>%
+    distinct() %>%
+    count(file) %>%
+    filter(n > 1)
+
+  if (nrow(counts) > 0) {
+    print(df[which(df$file %in% counts$file), ])
+    stop(
+      paste(
+        'Files do not uniquely map to end time and group number. Please',
+        'fix these issues in the previously saved annotation data located at:\n',
+        path
+      )
+    )
+  }
+}

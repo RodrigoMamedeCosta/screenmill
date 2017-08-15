@@ -2,12 +2,41 @@
 % Please edit documentation in R/read.R
 \name{read_screenmill}
 \alias{read_screenmill}
+\alias{read_annotations}
+\alias{read_collection_keys}
+\alias{read_collections}
+\alias{read_calibration_crop}
+\alias{read_calibration_grid}
+\alias{read_measurements}
+\alias{read_queries}
+\alias{read_treatments}
+\alias{read_media}
 \title{Read screenmill files in a directory}
 \usage{
 read_screenmill(dir)
+
+read_annotations(dir, file = "screenmill-annotations.csv")
+
+read_collection_keys(dir, file = "screenmill-collection-keys.csv")
+
+read_collections(dir, file = "screenmill-collections.csv")
+
+read_calibration_crop(dir, file = "screenmill-calibration-crop-csv")
+
+read_calibration_grid(dir, file = "screenmill-calibration-grid.csv")
+
+read_measurements(dir, file = "screenmill-measurements.csv")
+
+read_queries(dir, file = "screenmill-queries.csv")
+
+read_treatments(dir, file = "screenmill-treatments.csv")
+
+read_media(dir, file = "screenmill-media.csv")
 }
 \arguments{
-\item{dir}{Directory containing screenmill files}
+\item{dir}{Directory containing screenmill files.}
+
+\item{file}{File name with extension (not typically necessary as defaults are provided).}
 }
 \description{
 Read screenmill files in a directory

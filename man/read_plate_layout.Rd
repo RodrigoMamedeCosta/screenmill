@@ -27,6 +27,7 @@ These tables are required for every plate:
 \item \strong{strain_id} - The strain identifier.
 \item \strong{strain_name} - The human-readable name of the strain.
 \item \strong{plate_control} - (T/F) is position intended to be used as a control for plate normalization?
+\item \emph{excluded} - positions to exclude from analysis.
 }
 
 These tables are recommended (depending on the experiment):
@@ -34,7 +35,6 @@ These tables are recommended (depending on the experiment):
 \item \emph{plasmid_id} - A plasmid identifier
 \item \emph{OD600} - The culture density used for pinning.
 \item \emph{pinnings} - The number of pinnings from source plate to target plate.
-\item \emph{excluded} - positions to exclude from analysis.
 \item \emph{start_temp} - The starting temperature at the beginning of the experiment.
 \item \emph{end_temp} - The ending temperature at the end of the experiment.
 \item \emph{start_humidity} - The starting humidity at the beginning of the experiment.

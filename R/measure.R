@@ -13,40 +13,31 @@
 
 measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T) {
 
-  # Validate input
-  assert_that(
-    is.dir(dir), is.flag(overwrite), is.flag(save.plates), is.flag(save.colonies)
-  )
-
-  # Clean trailing slash from directory input
-  dir <- gsub('/$', '', dir)
-  ano_path <- file.path(dir, 'screenmill-annotations.csv', fsep = '/')
-  crp_path <- file.path(dir, 'screenmill-calibration-crop.csv', fsep = '/')
-  grd_path <- file.path(dir, 'screenmill-calibration-grid.csv', fsep = '/')
-  target   <- file.path(dir, 'screenmill-measurements.csv', fsep = '/')
+  status <- screenmill_status(dir)
+  assert_that(is.flag(overwrite), is.flag(save.plates), is.flag(save.colonies))
 
   # Stop if plates have not yet been annotated
-  if (!(file.exists(crp_path) && file.exists(grd_path))) stop('Could not find calibration files. Please annotate and calibrate before measuring.\nSee ?annotate and ?calibrate for more details.')
+  if (!status$flag$calibrated) stop('Could not find calibration files. Please annotate and calibrate before measuring.\nSee ?annotate and ?calibrate for more details.')
 
-  if (!overwrite && file.exists(target)) {
+  if (!overwrite && status$flag$measured) {
     # Exit if already calibratd and no overwrite
     message('This batch has already been measured Set "overwrite = TRUE" to re-measure.')
-    return(invisible(dir))
+    return(invisible(status$dir))
   } else {
     # Remove pre-existing files
-    if (file.exists(target)) file.remove(target)
+    suppressWarnings(file.remove(status$path$measurements))
   }
 
   # Read metadata
   annot <-
-    read_annotation(ano_path) %>% mutate(path = file.path(dir, file, fsep = '/')) %>%
+    read_annotation(dir) %>% mutate(path = file.path(dir, file, fsep = '/')) %>%
     select(path, file, plate_id, template, position)
   paths <- unique(annot$path)
   plates <-
-    left_join(annot, read_crop(crp_path), by = c('template', 'position')) %>%
+    left_join(annot, read_calibration_crop(dir), by = c('template', 'position')) %>%
     select(path, plate_id, starts_with('rough'), rotate, starts_with('fine'), invert)
   grids  <-
-    left_join(annot, read_grid(grd_path), by = c('template', 'position')) %>%
+    left_join(annot, read_calibration_grid(dir), by = c('template', 'position')) %>%
     group_by(plate_id) %>%
     arrange(row, column, replicate) %>%
     mutate(colony_num = 1:n()) %>%
@@ -119,11 +110,11 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
       }, mc.cores = cores) %>%
       bind_rows
 
-    write_csv(measurements, target, append = file.exists(target))
+    write_csv(measurements, status$path$measurements, append = file.exists(status$path$measurements))
   })
 
   message('Finished measuring in ', format(round(Sys.time() - time, 2)))
-  return(invisible(dir))
+  return(invisible(status$dir))
 }
 
 measure_addin <- function() {

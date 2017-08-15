@@ -87,17 +87,16 @@
 #' hot_table renderRHandsontable rHandsontableOutput hot_to_r
 #' @export
 
-annotate <- function(dir = '.', queries, strain_collections, strain_collection_keys,
+annotate <- function(dir = '.', queries,
+                     strain_collections, strain_collection_keys,
                      media, treatments, temperatures = c(23, 27, 30, 33, 37),
                      overwrite = FALSE, update = TRUE, ...) {
 
-  # Check arguments
-  assert_that(is.dir(dir), is.flag(overwrite), is.flag(update), is.numeric(temperatures))
-  dir <- gsub('/$', '', dir)
-  target <- file.path(dir, 'screenmill-annotations.csv', fsep = '/')
+  status <- screenmill_status(dir)
+  assert_that(is.flag(overwrite), is.flag(update), is.numeric(temperatures))
 
   # Get information about images - path, file, standard, time_series, time
-  images <- image_data(dir)
+  images <- read_image_data(status$dir)
 
   # Initialize lookup tables if missing
   use_db <- requireNamespace('rothfreezer', quietly = T)
@@ -136,7 +135,7 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
 
   # Initialize variables
   vars <- list()
-  if (!file.exists(target)) {
+  if (!status$flag$annotated) {
     # Set default variables
     vars$user  <- NULL
     vars$email <- NULL
@@ -153,7 +152,7 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
   } else {
     # Restore variables
     vars$tbl <-
-      screenmill_annotations(target) %>%
+      read_annotations(status$dir) %>%
       group_by(file, group) %>%
       mutate(positions = n(), time = end) %>%
       ungroup
@@ -182,34 +181,34 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
 
       # If desired, update CSVs with current annotation tables
       if (update) {
-        keep_collection_ids <- c('', vars$tbl$strain_collection_id)
+        keep_collection_ids <- vars$tbl$strain_collection_id
         strain_collections %>%
           filter(strain_collection_id %in% keep_collection_ids) %>%
-          write_csv(file.path(dir, 'screenmill-collections.csv'))
+          write_csv(status$path$collections)
 
-        keep_query_ids <- c('', vars$tbl$query_id)
+        keep_query_ids <- vars$tbl$query_id
         queries %>%
           filter(query_id %in% keep_query_ids) %>%
-          write_csv(file.path(dir, 'screenmill-queries.csv', fsep = '/'))
+          write_csv(status$path$queries)
 
-        keep_treatment_ids <- c('', vars$tbl$treatment_id)
+        keep_treatment_ids <- vars$tbl$treatment_id
         treatments %>%
           filter(treatment_id %in% keep_treatment_ids) %>%
-          write_csv(file.path(dir, 'screenmill-treatments.csv', fsep = '/'))
+          write_csv(status$path$treatments)
 
-        keep_media_ids <- c('', vars$tbl$media_id)
+        keep_media_ids <- vars$tbl$media_id
         media %>%
           filter(media_id %in% keep_media_ids) %>%
-          write_csv(file.path(dir, 'screenmill-media.csv', fsep = '/'))
+          write_csv(status$path$media)
 
-        keep_keys <- c('', vars$tbl$strain_collection_id)
+        keep_keys <- vars$tbl$strain_collection_id
         strain_collection_keys %>%
           filter(strain_collection_id %in% keep_keys) %>%
           collect %>%
-          write_csv(file.path(dir, 'screenmill-collection-keys.csv'))
+          write_csv(status$path$collection_keys)
       }
 
-      return(invisible(dir))
+      return(invisible(status$dir))
     }
   }
 
@@ -408,29 +407,27 @@ annotate <- function(dir = '.', queries, strain_collections, strain_collection_k
         write_csv(target)
 
       strain_collections %>%
-        filter(strain_collection_id %in% c('', annotations$strain_collection_id)) %>%
-        write_csv(file.path(dir, 'screenmill-collections.csv', fsep = '/'))
+        filter(strain_collection_id %in% (annotations$strain_collection_id)) %>%
+        write_csv(status$path$collections)
 
       queries %>%
-        filter(query_id %in% c('', annotations$query_id)) %>%
-        write_csv(file.path(dir, 'screenmill-queries.csv', fsep = '/'))
+        filter(query_id %in% (annotations$query_id)) %>%
+        write_csv(status$path$queries)
 
       treatments %>%
-        filter(treatment_id %in% c('', annotations$treatment_id)) %>%
-        write_csv(file.path(dir, 'screenmill-treatments.csv', fsep = '/'))
+        filter(treatment_id %in% (annotations$treatment_id)) %>%
+        write_csv(status$path$treatments)
 
       media %>%
-        filter(media_id %in% c('', annotations$media_id)) %>%
-        write_csv(file.path(dir, 'screenmill-media.csv', fsep = '/'))
+        filter(media_id %in% (annotations$media_id)) %>%
+        write_csv(status$path$media)
 
-      keys <-
-        strain_collection_keys %>%
-        filter(strain_collection_id %in% c('', annotations$strain_collection_id)) %>%
-        collect
+      strain_collection_keys %>%
+        filter(strain_collection_id %in% (annotations$strain_collection_id)) %>%
+        collect() %>%
+        write_csv(status$path$collection_keys)
 
-      write_csv(keys, file.path(dir, 'screenmill-collection-keys.csv'))
-
-      stopApp(invisible(dir))
+      stopApp(invisible(status$dir))
     })
   }
 
@@ -545,7 +542,7 @@ annotate_addin <- function() {
 }
 
 # ---- Utilities: screenmill ----
-image_data <- function(dir, ext =  '\\.tiff?$|\\.jpe?g$|\\.png$') {
+read_image_data <- function(dir, ext =  '\\.tiff?$|\\.jpe?g$|\\.png$') {
 
   paths <- list.files(dir, pattern = ext, full.names = T)
 

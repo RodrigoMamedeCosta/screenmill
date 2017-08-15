@@ -6,6 +6,51 @@
 
 assign_names <- function(x, names) { colnames(x) <- names; return(x) }
 
+# Check status of screenmill
+screenmill_status <- function(dir,
+                              file_anno = 'screenmill-annotations.csv',
+                              file_crop = 'screenmill-calibration-crop.csv',
+                              file_grid = 'screenmill-calibration-grid.csv',
+                              file_keys = 'screenmill-collection-keys.csv',
+                              file_coll = 'screenmill-collections.csv',
+                              file_msmt = 'screenmill-measurements.csv',
+                              file_mdia = 'screenmill-media.csv',
+                              file_qury = 'screenmill-queries.csv',
+                              file_trea = 'screenmill-treatments.csv',
+                              file_revw = 'screenmill-review-times.csv') {
+  assert_that(is.dir(dir))
+  dir <- gsub('/$', '', dir)
+
+  paths <-
+    file.path(dir, c(
+      # Annotate
+      file_anno, file_keys, file_coll, file_mdia, file_qury, file_trea,
+      # Calibrate           Measure    Review
+      file_crop, file_grid, file_msmt, file_revw
+    ))
+
+  list(
+    flag = list(
+      annotated  = all(file.exists(paths[1:6])),
+      calibrated = all(file.exists(paths[7:8])),
+      measured   = file.exists(paths[9]),
+      reviewed   = file.exists(paths[10])
+    ),
+    path = list(
+      annotation       = paths[1],
+      collection_keys  = paths[2],
+      collections      = paths[3],
+      media            = paths[4],
+      queries          = paths[5],
+      treatments       = paths[6],
+      calibration_crop = paths[7],
+      calibration_grid = paths[8],
+      measurements     = paths[9],
+      review_times     = paths[10]
+    ),
+    dir = dir
+  )
+}
 
 # Utils: read_cm --------------------------------------------------------------
 
@@ -555,37 +600,4 @@ read_greyscale <- function(path, invert = FALSE) {
   img <- EBImage::imageData(img)
   if (invert) img <- 1 - img
   return(img)
-}
-
-
-# Read screenmill-annotations.csv
-#' @importFrom readr read_csv cols
-screenmill_annotations <- function(path) {
-
-  df <-
-    path %>%
-    read_csv(
-      col_types =
-        cols(  # Enforce types for manually entered plate annotations
-          date = 'c', file = 'c', template = 'c', group = 'i', position = 'i',
-          strain_collection_id = 'c', plate = 'i', query_id = 'c', treatment_id = 'c',
-          media_id = 'c', temperature = 'n', time_series = 'c', timepoint = 'i',
-          start = 'c', end = 'c', owner = 'c', email = 'c'
-        )
-    )
-
-  # Validate data
-  counts <- df %>% select(file, end, group) %>% distinct %>% count(file) %>% filter(n > 1)
-  if (nrow(counts) > 0) {
-    print(df[which(df$file %in% counts$file), ])
-    stop(
-      paste(
-        'Files do not uniquely map to end time and group number. Please',
-        'fix these issues in the previously saved annotation data located at:\n',
-        path
-      )
-    )
-  }
-
-  return(df)
 }

@@ -46,42 +46,37 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert =
                       default_crop = NULL,
                       overwrite = FALSE, display = TRUE, save_plate = !display) {
 
-  # Validate input
+  status <- screenmill_status(dir)
   assert_that(
-    is.dir(dir), is.number(rotate), is.number(range),
+    is.number(rotate), is.number(range),
     is.number(thresh), is.flag(invert), is.flag(display), is.flag(save_plate),
     is.flag(overwrite), is.numeric(rough_pad), length(rough_pad) == 4,
     is.numeric(fine_pad), length(fine_pad) == 4
   )
 
-  # Clean trailing slash from directory input
-  dir <- gsub('/$', '', dir)
-  plt_path <- file.path(dir, 'screenmill-annotations.csv', fsep = '/')
-  crp_path <- file.path(dir, 'screenmill-calibration-crop.csv', fsep = '/')
-  grd_path <- file.path(dir, 'screenmill-calibration-grid.csv', fsep = '/')
-  key_path <- file.path(dir, 'screenmill-collection-keys.csv', fsep = '/')
-
   # Stop if plates have not yet been annotated
-  if (!file.exists(plt_path)) stop('Could not find ', plt_path, '. Please annotate plates before cropping. See ?annotate for more details.')
+  if (!status$flag$annotated) {
+    stop('Please annotate plates before cropping. See ?annotate for more details.')
+  }
 
-  if (!overwrite && (file.exists(crp_path) || file.exists(grd_path))) {
+  if (!overwrite && status$flag$calibrated) {
     # Exit if already calibratd and no overwrite
     message('This batch has already been calibrated. Set "overwrite = TRUE" to re-calibrate.')
-    return(invisible(dir))
+    return(invisible(status$dir))
   } else {
     # Remove pre-existing files
-    if (file.exists(crp_path)) file.remove(crp_path)
-    if (file.exists(grd_path)) file.remove(grd_path)
+    suppressWarnings(file.remove(status$path$calibration_crop))
+    suppressWarnings(file.remove(status$path$calibration_grid))
   }
 
   # Get paths to templates relative to dir, and corresponding plate positions
   annotation <-
     read_annotation(plt_path) %>%
     select(template, group, position, strain_collection_id, plate) %>%
-    mutate(template = paste(dir, template, sep = '/')) %>%
+    mutate(template = paste(status$dir, template, sep = '/')) %>%
     distinct
 
-  key <- read_key(key_path)
+  key <- read_strain_collection_keys(status$dir)
 
   templates <- unique(annotation$template)
 
@@ -93,11 +88,12 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert =
     templates, calibrate_template,
     # Arguments
     annotation, key, thresh, invert, rough_pad, fine_pad, rotate, range,
-    display, crp_path, grd_path, save_plate, default_crop
+    display, status$path$calibration_crop, status$path$calibration_grid,
+    save_plate, default_crop
   )
 
   message('Finished calibration in ', format(round(Sys.time() - time, 2)))
-  return(invisible(dir))
+  return(invisible(status$dir))
 }
 
 calibrate_addin <- function() {

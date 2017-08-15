@@ -2,20 +2,14 @@
 
 review <- function(dir = '.') {
 
-  # ---- Setup ----
-  # Check arguments
-  assert_that(is.dir(dir))
-  dir <- gsub('/$', '', dir)
-  crop_path <- file.path(dir, 'screenmill-calibration-crop.csv', fsep = '/')
-  grid_path <- file.path(dir, 'screenmill-calibration-grid.csv', fsep = '/')
+  status <- screenmill_status(dir)
 
-  # All necessary details to display 1 plate
-  if (!(file.exists(crop_path) & file.exists(grid_path))) {
+  if (!(status$annotated & status$calibrated)) {
     stop('Please annotate and calibrate before reviewing.')
   }
-  crop <- screenmill:::read_crop(crop_path)
+  crop <- read_calibration_crop(dir)
   init <-
-    screenmill:::read_grid(grid_path) %>%
+    read_calibration_grid(dir) %>%
     left_join(crop, by = c('template', 'position'))
 
   grouping <- paste(init$template, init$position)
@@ -40,7 +34,7 @@ review <- function(dir = '.') {
     observeEvent(input$save, {
       bind_rows(react$final) %>%
         select(template:b, excluded) %>%
-        readr::write_csv(grid_path)
+        readr::write_csv(status$path$calibration_grid)
       stopApp(invisible(dir))
     })
 
@@ -50,7 +44,7 @@ review <- function(dir = '.') {
       if (n > exit) {
         bind_rows(react$final) %>%
           select(template:b, excluded) %>%
-          readr::write_csv(grid_path)
+          readr::write_csv(status$path$calibration_grid)
         stopApp(invisible(dir))
       }
       updateSliderInput(session, 'plate', value = n)
