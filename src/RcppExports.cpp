@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // measureColonies
 List measureColonies(NumericMatrix img, NumericVector l, NumericVector r, NumericVector t, NumericVector b, Function background);
-RcppExport SEXP screenmill_measureColonies(SEXP imgSEXP, SEXP lSEXP, SEXP rSEXP, SEXP tSEXP, SEXP bSEXP, SEXP backgroundSEXP) {
+RcppExport SEXP _screenmill_measureColonies(SEXP imgSEXP, SEXP lSEXP, SEXP rSEXP, SEXP tSEXP, SEXP bSEXP, SEXP backgroundSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -23,7 +23,7 @@ END_RCPP
 }
 // nearestNeighbor
 DataFrame nearestNeighbor(NumericVector x, NumericVector y);
-RcppExport SEXP screenmill_nearestNeighbor(SEXP xSEXP, SEXP ySEXP) {
+RcppExport SEXP _screenmill_nearestNeighbor(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -35,8 +35,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"screenmill_measureColonies", (DL_FUNC) &screenmill_measureColonies, 6},
-    {"screenmill_nearestNeighbor", (DL_FUNC) &screenmill_nearestNeighbor, 2},
+    {"_screenmill_measureColonies", (DL_FUNC) &_screenmill_measureColonies, 6},
+    {"_screenmill_nearestNeighbor", (DL_FUNC) &_screenmill_nearestNeighbor, 2},
     {NULL, NULL, 0}
 };
 

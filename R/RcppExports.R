@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 measureColonies <- function(img, l, r, t, b, background) {
-    .Call('screenmill_measureColonies', PACKAGE = 'screenmill', img, l, r, t, b, background)
+    .Call('_screenmill_measureColonies', PACKAGE = 'screenmill', img, l, r, t, b, background)
 }
 
 nearestNeighbor <- function(x, y) {
-    .Call('screenmill_nearestNeighbor', PACKAGE = 'screenmill', x, y)
+    .Call('_screenmill_nearestNeighbor', PACKAGE = 'screenmill', x, y)
 }
 
