@@ -154,26 +154,31 @@ annotate <- function(dir = '.', queries,
     vars$tbl <-
       read_annotations(status$dir) %>%
       group_by(file, group) %>%
-      mutate(positions = n(), end = as.character(end), time = end) %>%
-      ungroup
+      mutate(
+        positions = n(),
+        start = as.character(start),
+        end   = as.character(end),
+        time  = end
+      ) %>%
+      ungroup()
     vars$user  <- vars$tbl$owner[1]
     vars$email <- vars$tbl$email[1]
     vars$ts    <- vars$tbl$time_series[1]
     vars$tbl1  <-
       (vars$tbl) %>%
       select(file, time, group) %>%
-      distinct
+      distinct()
     vars$tbl2  <-
       (vars$tbl) %>%
       select(group, template, start, positions, temperature) %>%
-      distinct
+      distinct()
     vars$tbl3 <-
       (vars$tbl) %>%
       select(
         group, template, position, strain_collection_id, plate, query_id,
         treatment_id, media_id
       ) %>%
-      distinct
+      distinct()
 
     # If not overwrite and everything has been annotated then exit
     if (!overwrite && all(complete.cases(vars$tbl))) {
@@ -291,9 +296,9 @@ annotate <- function(dir = '.', queries,
           mutate(
             Ptime = as.POSIXct(time),
             template = file[which.max(Ptime)],
-            start = min(Ptime) %>% as.character
+            start = as.character(min(Ptime))
           ) %>%
-          ungroup %>%
+          ungroup() %>%
           select(group, template, start) %>%
           distinct %>%
           left_join(rename(vars$tbl2, r_start = start), by = c('group', 'template')) %>%
@@ -381,7 +386,7 @@ annotate <- function(dir = '.', queries,
         mutate_all(funs(ifelse(. == '', NA, .))) %>% # replace empty string with NA
         mutate(
           plate = as.integer(plate),
-          date = as.Date(start),
+          date  = as.Date(start),
           owner = ifelse(is.null(input$user) || (input$user) == '', NA, (input$user)),
           email = ifelse(is.null(input$email) || (input$user) == '', NA, (input$email)),
           time_series = (input$ts),
