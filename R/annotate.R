@@ -154,7 +154,7 @@ annotate <- function(dir = '.', queries,
     vars$tbl <-
       read_annotations(status$dir) %>%
       group_by(file, group) %>%
-      mutate(positions = n(), time = end) %>%
+      mutate(positions = n(), end = as.character(end), time = end) %>%
       ungroup
     vars$user  <- vars$tbl$owner[1]
     vars$email <- vars$tbl$email[1]
