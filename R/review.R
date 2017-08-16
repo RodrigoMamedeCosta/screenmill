@@ -13,13 +13,13 @@ review <- function(dir = '.', overwrite = FALSE) {
 
   status <- screenmill_status(dir)
 
-  if (!(status$annotated & status$calibrated)) {
+  if (!(status$flag$annotated && status$flag$calibrated)) {
     stop('Please annotate and calibrate before reviewing.')
   }
 
   grid <- read_calibration_grid(dir)
 
-  if (!overwrite && status$reviewed) {
+  if (!overwrite && status$flag$reviewed) {
     message('This batch has already been reviewed. Set "overwrite = TRUE" to re-review.')
     return(invisible(status$dir))
   }
