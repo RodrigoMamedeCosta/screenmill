@@ -76,7 +76,7 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert =
     mutate(template = paste(status$dir, template, sep = '/')) %>%
     distinct
 
-  key <- read_strain_collection_keys(status$dir)
+  key <- read_collection_keys(status$dir)
 
   templates <- unique(annotation$template)
 
