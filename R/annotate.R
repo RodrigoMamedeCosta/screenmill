@@ -580,7 +580,7 @@ read_image_data <- function(dir, ext =  '\\.tiff?$|\\.jpe?g$|\\.png$') {
 
 check_annotation_tables <- function(key_info, keys, queries, treatments, media) {
   # Check for missing columns
-  req_cols_key   <- c('strain_collection_id', 'strain_id', 'strain_name', 'plate', 'row', 'column', 'plate_control')
+  req_cols_key   <- c('strain_collection_id', 'strain_id', 'strain_name', 'plate', 'row', 'column', 'plate_control', 'excluded')
   req_cols_info  <- c('strain_collection_id', 'description')
   req_cols_query <- c('query_id', 'query_name', 'control_query_id')
   req_cols_treat <- c('treatment_id', 'treatment_name', 'control_treatment_id')
