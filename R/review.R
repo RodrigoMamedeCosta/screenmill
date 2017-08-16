@@ -17,6 +17,7 @@ review <- function(dir = '.', overwrite = FALSE) {
     stop('Please annotate and calibrate before reviewing.')
   }
 
+  crop <- read_calibration_crop(dir)
   grid <- read_calibration_grid(dir)
 
   if (!overwrite && status$flag$reviewed) {
@@ -24,12 +25,7 @@ review <- function(dir = '.', overwrite = FALSE) {
     return(invisible(status$dir))
   }
 
-  init <-
-    left_join(
-      grid,
-      read_calibration_crop(dir),
-      by = c('template', 'position')
-    )
+  init <- left_join(grid, crop, by = c('template', 'position'))
 
   grouping <- paste(init$template, init$position)
   exit <- length(unique(grouping))
