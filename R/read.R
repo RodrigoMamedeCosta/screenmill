@@ -115,7 +115,7 @@ read_collections <- function(dir, file = 'screenmill-collections.csv') {
 #' @rdname read_screenmill
 #' @export
 
-read_calibration_crop <- function(dir, file = 'screenmill-calibration-crop-csv') {
+read_calibration_crop <- function(dir, file = 'screenmill-calibration-crop.csv') {
   read_csv(
     file.path(dir, file),
     col_types = cols_only( # strict columns
