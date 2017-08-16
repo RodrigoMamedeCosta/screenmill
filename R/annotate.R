@@ -204,7 +204,7 @@ annotate <- function(dir = '.', queries,
         keep_keys <- vars$tbl$strain_collection_id
         strain_collection_keys %>%
           filter(strain_collection_id %in% keep_keys) %>%
-          collect %>%
+          collect() %>%
           write_csv(status$path$collection_keys)
       }
 
@@ -422,8 +422,9 @@ annotate <- function(dir = '.', queries,
         filter(media_id %in% (annotations$media_id)) %>%
         write_csv(status$path$media)
 
+      keep_keys <- annotations$strain_collection_id
       strain_collection_keys %>%
-        filter(strain_collection_id %in% (annotations$strain_collection_id)) %>%
+        filter(strain_collection_id %in% keep_keys) %>%
         collect() %>%
         write_csv(status$path$collection_keys)
 
