@@ -30,7 +30,7 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
 
   # Read metadata
   annot <-
-    read_annotation(dir) %>% mutate(path = file.path(dir, file, fsep = '/')) %>%
+    read_annotations(status$dir) %>% mutate(path = file.path(dir, file, fsep = '/')) %>%
     select(path, file, plate_id, template, position)
   paths <- unique(annot$path)
   plates <-

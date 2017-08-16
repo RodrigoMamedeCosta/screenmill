@@ -71,7 +71,7 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert =
 
   # Get paths to templates relative to dir, and corresponding plate positions
   annotation <-
-    read_annotation(status$dir) %>%
+    read_annotations(status$dir) %>%
     select(template, group, position, strain_collection_id, plate) %>%
     mutate(template = paste(status$dir, template, sep = '/')) %>%
     distinct
