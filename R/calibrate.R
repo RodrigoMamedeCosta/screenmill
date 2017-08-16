@@ -139,7 +139,7 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
     rough <- select_(default_crop, ~position, ~plate_row, ~plate_col, ~plate_x, ~plate_y, ~rough_l, ~rough_r, ~rough_t, ~rough_b)
   }
 
-  if (nrow(rough) > length(anno$position)) warning('For ', basename(template), ', keeping positions (', paste(anno$position, collapse = ', '), ') of ', nrow(rough), ' available.', call. = FALSE)
+  if (nrow(rough) > length(anno$position)) warning('For ', basename(template), ', keeping positions (', paste(anno$position, collapse = ', '), ') of ', nrow(rough), ' available.\n', call. = FALSE)
 
   if (display) screenmill:::display_rough_crop(img, rough, 'red')
 
@@ -194,7 +194,7 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
       if (is.null(result)) {
         warning(
           'Failed to locate colony grid for ', basename(template),
-          ' at position ', p, '. This plate position has been skipped.',
+          ' at position ', p, '. This plate position has been skipped.\n',
           call. = FALSE)
       } else {
         # Annotate result with template, position, strain collection and plate
@@ -212,7 +212,7 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
             basename(template), ' at position ', p,
             ' is not a square multiple of the number of annotated positions (',
             nrow(keyi), ') present in the key for ', collection_id,
-            ' plate #', collection_plate, '. This plate position has been skipped', call. = FALSE
+            ' plate #', collection_plate, '. This plate position has been skipped.\n', call. = FALSE
           )
         } else {
           # Annotate with key row/column/replicate values
