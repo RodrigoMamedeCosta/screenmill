@@ -232,6 +232,8 @@ annotate <- function(dir = '.', queries,
   # ---- Server ----
   server <- function(input, output, session) {
 
+    session$onSessionEnded(function() stopApp())
+
     # The following is an ugly hack to ensure input table dependencies propagate.
     # The problem - handsontable inputs are only NULL if the table has
     # never been touched, otherwise it stores the last edited state. Which
