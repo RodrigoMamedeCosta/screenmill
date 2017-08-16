@@ -445,7 +445,14 @@ annotate <- function(dir = '.', queries,
     miniPage(
       gadgetTitleBar(
         'Annotate Plates',
-        right = miniTitleBarButton('save', 'Save', primary = TRUE)
+        #right = miniTitleBarButton('save', 'Save', primary = TRUE)
+        right = tags$button(
+          id = 'save',
+          type = 'button',
+          class = 'btn btn-primary btn-sm action-button',
+          onclick = 'setTimeout(function(){window.close();},50);',
+          'Save'
+        )
       ),
       miniContentPanel(
         textInput('user', label = NULL, value = vars$user, placeholder = 'Name'),
