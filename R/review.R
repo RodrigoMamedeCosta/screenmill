@@ -50,7 +50,7 @@ review <- function(dir = '.', overwrite = FALSE) {
       bind_rows(react$final) %>%
         select(template:b, excluded) %>%
         readr::write_csv(status$path$calibration_grid)
-      readr::write_csv(data.frame(timestamp = Sys.time()), append = TRUE)
+      readr::write_csv(data.frame(timestamp = Sys.time()), status$path$review_times, append = TRUE)
       stopApp(invisible(dir))
     })
 
@@ -61,7 +61,7 @@ review <- function(dir = '.', overwrite = FALSE) {
         bind_rows(react$final) %>%
           select(template:b, excluded) %>%
           readr::write_csv(status$path$calibration_grid)
-        readr::write_csv(data.frame(timestamp = Sys.time()), append = TRUE)
+        readr::write_csv(data.frame(timestamp = Sys.time()), status$path$review_times, append = TRUE)
         stopApp(invisible(dir))
       }
       updateSliderInput(session, 'plate', value = n)
