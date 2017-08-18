@@ -12,18 +12,19 @@ read_screenmill <- function(dir) {
 
   assert_that(assertthat::is.dir(dir), assertthat::is.readable(dir))
 
-  strain_collections(dir) %>%
-    left_join(
-      read_collections_key(dir) %>% select(excluded_key = excluded),
-      by = c('strain_collection_id', 'plate', 'row', 'column')
-    ) %>%
+  read_collection_keys(dir) %>%
+    select(-excluded) %>%
     left_join(
       read_annotations(dir),
-      by = c('strain_collection_id', 'plate_id')
+      by = c('strain_collection_id', 'plate')
     ) %>%
     left_join(
       read_calibration_grid(dir),
-      by = c('plate', 'row', 'column', 'replicate', 'group', 'position', 'template')
+      by = c('plate', 'row', 'column', 'group', 'position', 'template')
+    ) %>%
+    left_join(
+      read_measurements(dir),
+      by = c("plate", "row", "column", "plate_id", "replicate", "colony_row", "colony_col")
     ) %>%
     left_join(
       read_queries(dir),
