@@ -21,7 +21,7 @@ read_collection_keys(dir, file = "screenmill-collection-keys.csv")
 
 read_collections(dir, file = "screenmill-collections.csv")
 
-read_calibration_crop(dir, file = "screenmill-calibration-crop-csv")
+read_calibration_crop(dir, file = "screenmill-calibration-crop.csv")
 
 read_calibration_grid(dir, file = "screenmill-calibration-grid.csv")
 
