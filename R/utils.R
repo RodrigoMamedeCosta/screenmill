@@ -352,8 +352,11 @@ grid_angle <- function(img, rough, range) {
 # @param rotate Rotate
 # @param invert Invert
 # @param pad Pad
+# @param dim_key Row and column dimensions of the key.
+#
+#' @importFrom rlang .data
 
-fine_crop <- function(img, rotate, range, pad, invert) {
+fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols) {
 
   # Invert if desired and set lowest intensity pixel to 0
   if (invert) neg <- max(img) - img else neg <- img - min(img)
@@ -377,7 +380,8 @@ fine_crop <- function(img, rotate, range, pad, invert) {
     with(feat, feat[
       area  > mean(area) + (5 * mad(area)) |
         area  < 10 |
-        eccen > 0.8,
+        eccen > 0.8 |
+        ndist < median(ndist) - (15 * mad(ndist)),
       ])
   good  <- with(feat, feat[!(obj %in% crap$obj), ])
   clean <- EBImage::rmObjects(obj, crap$obj) > 0
@@ -392,49 +396,44 @@ fine_crop <- function(img, rotate, range, pad, invert) {
     return(default)
   }
 
-
   # Identify edges of grid
-  cols <- screenmill:::grid_breaks(clean, 'col', thresh = 0.3)
-  if (length(cols) == 0L) cols <- c(1, nrow(clean)) # don't crop
-  if (length(cols) == 1L) {
-    if (cols > nrow(clean) / 2) {
-      cols <- c(1, cols)
-    } else {
-      cols <- c(cols, nrow(clean))
-    }
-  }
-  rows <- screenmill:::grid_breaks(clean, 'row', thresh = 0.3)
-  if (length(rows) == 0L) rows <- c(1, ncol(clean)) # don't crop
-  if (length(rows) == 1L) {
-    if (rows > ncol(clean) / 2) {
-      rows <- c(1, rows)
-    } else {
-      rows <- c(rows, ncol(clean))
-    }
-  }
+
+  # Get the median of the edge most objects given expected rows/cols, and add 80% of grid spacing
+  grid_spacing <- median(good$ndist)
+  l_edge <- median(sort(good$x, decreasing = FALSE)[1:n_grid_rows]) - (grid_spacing * 0.7)
+  r_edge <- median(sort(good$x, decreasing =  TRUE)[1:n_grid_rows]) + (grid_spacing * 0.7)
+  t_edge <- median(sort(good$y, decreasing = FALSE)[1:n_grid_cols]) - (grid_spacing * 0.7)
+  b_edge <- median(sort(good$y, decreasing =  TRUE)[1:n_grid_cols]) + (grid_spacing * 0.7)
+
+  # Limit fine cropping to 10% of rough crop dimensions
+  n_col_pixels <- nrow(clean)
+  n_row_pixels <- ncol(clean)
+  l_edge_max <- n_col_pixels * 0.1
+  r_edge_min <- n_col_pixels - l_edge_max
+  t_edge_max <- n_row_pixels * 0.1
+  b_edge_min <- n_row_pixels - t_edge_max
+  l_edge <- as.integer(round(ifelse(l_edge > l_edge_max, l_edge_max, l_edge)))
+  r_edge <- as.integer(round(ifelse(r_edge < r_edge_min, r_edge_min, r_edge)))
+  t_edge <- as.integer(round(ifelse(t_edge > t_edge_max, t_edge_max, t_edge)))
+  b_edge <- as.integer(round(ifelse(b_edge < b_edge_min, b_edge_min, b_edge)))
 
   # Construct fine crop data
   dplyr::data_frame(
     rotate = angle,
-    # Adjust edges based on previous dilation and user specified padding
-    left   = head(cols, 1) - pad[1],
-    right  = tail(cols, 1) + pad[2],
-    top    = head(rows, 1) - pad[3],
-    bot    = tail(rows, 1) + pad[4]
+    # Adjust edges based on user specified padding
+    left   = l_edge - pad[1],
+    right  = r_edge + pad[2],
+    top    = t_edge - pad[3],
+    bot    = b_edge + pad[4]
   ) %>%
-    dplyr::mutate_(
+    dplyr::mutate(
       # Limit edges if they excede dimensions of image after padding
-      fine_l = ~ifelse(left < 1, 1, left),
-      fine_r = ~ifelse(right > nrow(rotated), nrow(rotated), right),
-      fine_t = ~ifelse(top < 1, 1, top),
-      fine_b = ~ifelse(bot > ncol(rotated), ncol(rotated), bot),
-      # Expand edges if fine cropping was too aggressive
-      fine_l = ~ifelse(fine_l > 150, 150, fine_l),
-      fine_t = ~ifelse(fine_t > 150, 150, fine_t),
-      fine_r = ~ifelse(fine_r < nrow(rotated) - 150, nrow(rotated) - 150, fine_r),
-      fine_b = ~ifelse(fine_b < ncol(rotated) - 150, ncol(rotated) - 150, fine_b)
+      fine_l = ifelse(.data$left < 1, 1, .data$left),
+      fine_r = ifelse(.data$right > nrow(rotated), nrow(rotated), .data$right),
+      fine_t = ifelse(.data$top < 1, 1, .data$top),
+      fine_b = ifelse(.data$bot > ncol(rotated), ncol(rotated), .data$bot)
     ) %>%
-    dplyr::select_(~rotate, ~dplyr::matches('fine'))
+    dplyr::select('rotate', dplyr::matches('fine'))
 }
 
 
