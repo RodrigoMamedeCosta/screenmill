@@ -4,13 +4,17 @@
 \alias{calibrate}
 \title{Calibrate cropping and rotation parameters}
 \usage{
-calibrate(dir = ".", rotate = 90, range = 2, thresh = 0.03,
-  invert = TRUE, rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
-  default_crop = NULL, overwrite = FALSE, display = TRUE,
-  save_plate = !display)
+calibrate(dir = ".", grid_rows, grid_cols, rotate = 90, range = 2,
+  thresh = 0.03, invert = TRUE, rough_pad = c(0, 0, 0, 0),
+  fine_pad = c(0, 0, 0, 0), default_crop = NULL, overwrite = FALSE,
+  display = TRUE, save_plate = !display)
 }
 \arguments{
 \item{dir}{Directory of images to process.}
+
+\item{grid_rows}{Number of expected rows in colony grid.}
+
+\item{grid_cols}{Number of expected columns in colony grid.}
 
 \item{rotate}{A rough angle in degrees clockwise to rotate each plate. The
 rotation angle will be further calibrated after applying this rotation.

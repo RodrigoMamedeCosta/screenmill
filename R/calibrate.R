@@ -5,6 +5,8 @@
 #' with an arbritrarily sized grid of plates.
 #'
 #' @param dir Directory of images to process.
+#' @param grid_rows Number of expected rows in colony grid.
+#' @param grid_cols Number of expected columns in colony grid.
 #' @param rotate A rough angle in degrees clockwise to rotate each plate. The
 #' rotation angle will be further calibrated after applying this rotation.
 #' Defaults to \code{90}.
@@ -41,8 +43,9 @@
 #'
 #' @export
 
-calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert = TRUE,
-                      rough_pad = c(0, 0, 0, 0), fine_pad = c(10, 10, 10, 10),
+calibrate <- function(dir = '.', grid_rows, grid_cols,
+                      rotate = 90, range = 2, thresh = 0.03, invert = TRUE,
+                      rough_pad = c(0, 0, 0, 0), fine_pad = c(0, 0, 0, 0),
                       default_crop = NULL,
                       overwrite = FALSE, display = TRUE, save_plate = !display) {
 
@@ -87,8 +90,9 @@ calibrate <- function(dir = '.', rotate = 90, range = 2, thresh = 0.03, invert =
   lapply(
     templates, calibrate_template,
     # Arguments
-    annotation, key, thresh, invert, rough_pad, fine_pad, rotate, range,
-    display, status$path$calibration_crop, status$path$calibration_grid,
+    annotation, key, grid_rows, grid_cols, thresh, invert, rough_pad,
+    fine_pad, rotate, range, display,
+    status$path$calibration_crop, status$path$calibration_grid,
     save_plate, default_crop
   )
 
@@ -120,7 +124,7 @@ calibrate_addin <- function() {
 #' @importFrom readr write_csv
 #' @importFrom tibble rownames_to_column
 
-calibrate_template <- function(template, annotation, key, thresh, invert, rough_pad,
+calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, thresh, invert, rough_pad,
                                fine_pad, rotate, range, display, crp, grd, save_plate,
                                default_crop) {
 
@@ -156,7 +160,7 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
       purrr::map_df(1:length(anno$position), function(i) {
         progress$tick()$print()
         p <- anno$position[i]
-        result <- screenmill:::fine_crop(plates[[i]], rotate, range, fine_pad, invert)
+        result <- screenmill:::fine_crop(plates[[i]], rotate, range, fine_pad, invert, grid_rows, grid_cols)
         result$template <- basename(template)
         result$position <- p
         return(result)
@@ -189,7 +193,7 @@ calibrate_template <- function(template, annotation, key, thresh, invert, rough_
       rotated <- EBImage::rotate(plate, finei$rotate)
       cropped <- with(finei, rotated[fine_l:fine_r, fine_t:fine_b])
 
-      result <- screenmill:::locate_grid(cropped, radius = 1, keyi)
+      result <- screenmill:::locate_grid(cropped, grid_rows, grid_cols, radius = 1, keyi)
 
       if (is.null(result)) {
         warning(
@@ -322,19 +326,18 @@ display_plate <- function(img, grid, template, group, position, text.color, grid
 #
 # @param img An Image object or matrix. See \link[EBImage]{Image}.
 # @param radius Fraction of the average distance between row/column centers and
-# edges. Affects the size of the selection box for each colony. Defaults to
-# 0.9 (i.e. 90%).
+# edges. Affects the size of the selection box for each colony.
 #
 #' @importFrom tidyr complete
 
-locate_grid <- function(img, radius, key) {
+locate_grid <- function(img, grid_rows, grid_cols, radius, key) {
 
   # Scale image for rough object detection
   rescaled <- EBImage::normalize(img, inputRange = c(0.1, 0.8))
 
   # Blur image to combine spotted colonies into single objects for threshold
   blr <- EBImage::gblur(rescaled, sigma = 6)
-  thr <- EBImage::thresh(blr, w = 15, h = 15, offset = 0.05)
+  thr <- blr > EBImage::otsu(blr)
 
   # label objects using watershed algorithm to be robust to connected objects
   wat <- EBImage::watershed(EBImage::distmap(thr))
@@ -369,18 +372,19 @@ locate_grid <- function(img, radius, key) {
   # Characterize objects and bin them into rows/columns
   objs <-
     object_features(wat) %>%
-    filter(eccen < 0.8) %>%   # remove weird objects
+    filter(eccen < 0.8) %>%
     mutate(
-      colony_row = cut(y, unique(rows), labels = FALSE),
-      colony_col = cut(x, unique(cols), labels = FALSE)
-    )
+      colony_row = findInterval(y, rows),
+      colony_col = findInterval(x, cols)
+    ) %>%
+    filter(colony_row >= 1L, colony_col >= 1L, colony_row <= grid_rows, colony_col <= grid_cols)
 
   # If multiple objects are found in a grid location, choose largest object
   rough_grid <-
     objs %>%
     group_by(colony_row, colony_col) %>%
     summarise(x = x[which.max(area)], y = y[which.max(area)]) %>%
-    ungroup
+    ungroup()
 
   # Determine x/y coordinates of each grid location
   fine_grid <-
