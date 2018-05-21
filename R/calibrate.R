@@ -337,22 +337,30 @@ locate_grid <- function(img, grid_rows, grid_cols, radius, key) {
 
   # Blur image to combine spotted colonies into single objects for threshold
   blr <- EBImage::gblur(rescaled, sigma = 6)
+
+  # Threshold using automatic background threshold level detection
   thr <- blr > EBImage::otsu(blr)
 
   # label objects using watershed algorithm to be robust to connected objects
   wat <- EBImage::watershed(EBImage::distmap(thr))
 
-  # Detect rough location of rows and columns
-  cols <- grid_breaks(thr, 'col', thresh = 0.07, edges = 'mid')
-  rows <- grid_breaks(thr, 'row', thresh = 0.07, edges = 'mid')
-  cols_expected <- length(unique(key$column))
-  rows_expected <- length(unique(key$row))
-  multiplier <- max(
-    round((length(cols) - 1) / cols_expected),
-    round((length(rows) - 1) / rows_expected)
-  )
-  cols_expected <- cols_expected * multiplier
-  rows_expected <- rows_expected * multiplier
+  # Characterize objects
+  objs <- object_features(wat)
+
+  # Identify row/column centers by clustering objects into into expected number
+  clusters <-
+    objs %>%
+    mutate(
+      x_cluster = cutree(hclust(dist(x)), k = grid_cols),
+      y_cluster = cutree(hclust(dist(y)), k = grid_rows)
+    )
+
+  col_centers <- clusters %>% group_by(x_cluster) %>% summarise(x = median(x)) %>% pull(x) %>% sort()
+  row_centers <- clusters %>% group_by(y_cluster) %>% summarise(y = median(y)) %>% pull(y) %>% sort()
+
+  # Move break points to midpoint between centers
+  rows <- head(row_centers, -1) + (diff(row_centers) / 2)
+  cols <- head(col_centers, -1) + (diff(col_centers) / 2)
 
   # Clean up detected rows and columns
   cols <- remove_out_of_step(cols)
@@ -362,8 +370,8 @@ locate_grid <- function(img, grid_rows, grid_cols, radius, key) {
 
   if (length(cols) < 2 || length(rows) < 2) return(NULL)
 
-  cols <- deal_with_edges(cols, n = length(cols) - cols_expected - 1, dim = nrow(wat))
-  rows <- deal_with_edges(rows, n = length(rows) - rows_expected - 1, dim = ncol(wat))
+  cols <- deal_with_edges(cols, n = length(cols) - grid_cols - 1, dim = nrow(wat))
+  rows <- deal_with_edges(rows, n = length(rows) - grid_rows - 1, dim = ncol(wat))
   col_centers <- ((cols + lag(cols)) / 2)[-1]
   row_centers <- ((rows + lag(rows)) / 2)[-1]
 
