@@ -20,11 +20,11 @@ read_screenmill <- function(dir) {
     ) %>%
     left_join(
       read_calibration_grid(dir),
-      by = c('plate', 'row', 'column', 'group', 'position', 'template')
+      by = c('strain_collection_id', 'plate', 'row', 'column', 'group', 'position', 'template')
     ) %>%
     left_join(
       read_measurements(dir),
-      by = c("plate", "row", "column", "plate_id", "replicate", "colony_row", "colony_col")
+      by = c('strain_collection_id', 'plate', 'row', 'column', 'plate_id', 'replicate', 'colony_row', 'colony_col')
     ) %>%
     left_join(
       read_queries(dir),
@@ -189,7 +189,7 @@ read_measurements <- function(dir, file = 'screenmill-measurements.csv') {
   read_csv(
     file.path(dir, file),
     col_types = cols_only( # strict columns
-      plate_id = readr::col_character(),
+      plate_id             = readr::col_character(),
       strain_collection_id = readr::col_character(),
       plate                = readr::col_integer(),
       row                  = readr::col_integer(),
