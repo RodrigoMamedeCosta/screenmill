@@ -272,7 +272,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
       return(result)
     })
 
-  grid$excluded <- FALSE
+  if (nrow(grid) > 0) grid$excluded <- FALSE
 
   # Write results to file
   write_csv(crop, crp, append = file.exists(crp))
