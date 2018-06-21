@@ -347,6 +347,9 @@ locate_grid <- function(img, grid_rows, grid_cols, radius, key) {
   # Characterize objects
   objs <- object_features(wat)
 
+  # Exit if there are too few objects
+  if (any(nrow(objs) < c(grid_rows, grid_cols))) return(NULL)
+
   # Identify row/column centers by clustering objects into into expected number
   clusters <-
     objs %>%
