@@ -81,7 +81,7 @@ parse_names <- function(lines, by = ',') {
 # Parse measurements in colony measurement log file
 # @param lines Character; Vector of measurement lines from CM engine log.
 # @param by Delimiter used to split measurements. Defaults to \code{\\\\t}.
-#' @imporFrom rlang .data
+#' @importFrom rlang .data
 
 parse_measurements <- function(lines, by) {
   tbl <- do.call(rbind, strsplit(lines, by))
@@ -187,7 +187,6 @@ find_header <- function(path, match, delim, max = 100) {
 #' @importFrom readr read_csv cols
 #' @importFrom tidyr gather_
 #' @importFrom stringr str_extract regex
-#' @importFrom rlang !!
 
 plate_gather <- function(path,
                          value,

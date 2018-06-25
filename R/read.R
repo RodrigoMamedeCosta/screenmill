@@ -283,7 +283,7 @@ read_media <- function(dir, file = 'screenmill-media.csv') {
 #' - *end_humidity* - The ending humidity at the end of the experiment.
 #'
 #' @importFrom stringr str_extract
-#' @importFrom purrr map reduce map_df
+#' @importFrom purrr map reduce map_df discard !!
 #' @export
 
 read_plate_layout <- function(dir) {
@@ -296,6 +296,7 @@ read_plate_layout <- function(dir) {
       list.files(dir, pattern = annotation, full.names = T) %>%
         map_df(plate_gather, annotation)  # see utils.R
     }) %>%
+    discard(is.null) %>%
     reduce(left_join, by = c('row', 'column', 'plate')) %>%
     mutate(strain_collection_id = basename(dir)) %>%
     select(
