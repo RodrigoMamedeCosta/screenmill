@@ -288,7 +288,7 @@ read_media <- function(dir, file = 'screenmill-media.csv') {
 
 read_plate_layout <- function(dir) {
   assert_that(is.dir(dir))
-  list.files(dir) %>%
+  list.files(dir, pattern = '^plate') %>% # only read files starting with plate
     # annotation based on file name as name of table in sheet (between "-" and ".csv")
     str_extract('(?<=-).*(?=([.]csv$))') %>%
     unique() %>%

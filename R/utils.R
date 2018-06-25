@@ -171,6 +171,7 @@ find_header <- function(path, match, delim, max = 100) {
 #
 # @param path Path to CSV to gather
 # @param value Name of value variable
+# @param row Name of row number column
 # @param plate_pattern Regex used to extract plate number from `path`
 #
 # @details It is easiest to annotate e.g. a 96 well plate with strain, plasmid,
@@ -184,19 +185,27 @@ find_header <- function(path, match, delim, max = 100) {
 #' @importFrom readr read_csv cols
 #' @importFrom tidyr gather_
 #' @importFrom stringr str_extract regex
+#' @importFrom rlang !!
 
-plate_gather <- function(path, value, plate_pattern = '(?<=(plate))[0-9]{1,}') {
+plate_gather <- function(path,
+                         value,
+                         row = 'row',
+                         plate_pattern = '(?<=(plate))[0-9]{1,}') {
 
-  plate_numb <- as.integer(str_extract(basename(path), regex(plate_pattern, ignore_case = T)))
-  if (is.na(plate_numb)) stop('Failed to determine plate number for:\n', basename(path))
+  # Plate number is extracted from the file name of the CSV being gathered
+  plate_numb <-
+    as.integer(stringr::str_extract(
+      basename(path),
+      stringr::regex(plate_pattern, ignore_case = T)
+    ))
 
+  if (is.na(plate_numb)) {
+    stop('Failed to determine plate number for:\n', basename(path))
+  }
+
+  # Gather every column that isn't "row" into value column. Infer types.
   readr::read_csv(path, col_types = readr::cols()) %>%
-    tidyr::gather_(
-      'column',
-      value,
-      dplyr::select_vars(names(.), -dplyr::matches('row')), # gathers all columns but 'row'
-      convert = T                                           # Type convert after gathering
-    ) %>%
+    tidyr::gather(key = 'column', value = !!value, -!!row, convert = T) %>%
     dplyr::mutate(plate = plate_numb)
 }
 
