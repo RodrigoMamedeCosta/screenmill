@@ -296,7 +296,7 @@ read_plate_layout <- function(dir) {
       list.files(dir, pattern = annotation, full.names = T) %>%
         map_df(plate_gather, annotation)  # see utils.R
     }) %>%
-    discard(is.null) %>%
+    keep(~length(.x) > 0) %>% # drop NULL or empty tables
     reduce(left_join, by = c('row', 'column', 'plate')) %>%
     mutate(strain_collection_id = basename(dir)) %>%
     select(
