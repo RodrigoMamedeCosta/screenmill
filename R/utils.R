@@ -206,12 +206,12 @@ plate_gather <- function(path,
   }
 
   data <- readr::read_csv(path, col_types = readr::cols())
-  data$plate <- plate_numb
 
   # Ignore tables that do not have a "row" column
   if (!hasName(data, row)) return(NULL)
 
   # Gather every column that isn't "row" into value column. Infer types.
+  data$plate <- plate_numb
   tidyr::gather(data, key = 'column', value = !!value, -!!row, convert = T)
 }
 
