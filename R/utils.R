@@ -58,6 +58,7 @@ screenmill_status <- function(dir,
 # @param lines Character; Parse plate lines from CM engine log.
 # @param by Delimiter used to split plate names, numbers, and conditions.
 #' @importFrom stringr str_count str_replace
+#' @importFrom rlang .data
 
 parse_names <- function(lines, by = ',') {
 
@@ -69,17 +70,18 @@ parse_names <- function(lines, by = ',') {
   do.call(rbind, strsplit(lines, by)) %>%
     assign_names(c('scan_name', 'plate', 'scan_cond')) %>%
     as.data.frame(stringsAsFactors = FALSE) %>%
-    mutate_(
-      id        = ~paste(scan_name, plate, scan_cond, sep = ','),
-      plate     = ~as.integer(plate),
-      scan_cond = ~gsub('\\.[^\\.]*$', '', scan_cond),
-      scan_cond = ~ifelse(is.na(scan_cond) | scan_cond == '', 'none', scan_cond)
+    mutate(
+      id        = paste(.data$scan_name, .data$plate, .data$scan_cond, sep = ','),
+      plate     = as.integer(.data$plate),
+      scan_cond = gsub('\\.[^\\.]*$', '', .data$scan_cond),
+      scan_cond = ifelse(is.na(.data$scan_cond) | .data$scan_cond == '', 'none', .data$scan_cond)
     )
 }
 
 # Parse measurements in colony measurement log file
 # @param lines Character; Vector of measurement lines from CM engine log.
 # @param by Delimiter used to split measurements. Defaults to \code{\\\\t}.
+#' @imporFrom rlang .data
 
 parse_measurements <- function(lines, by) {
   tbl <- do.call(rbind, strsplit(lines, by))
@@ -88,12 +90,12 @@ parse_measurements <- function(lines, by) {
     tbl %>%
       assign_names(c('size', 'circ')) %>%
       as.data.frame(stringsAsFactors = FALSE) %>%
-      mutate_(size = ~as.numeric(size), circ = ~as.numeric(circ))
+      mutate(size = as.numeric(.data$size), circ = ~as.numeric(.data$circ))
   } else if (ncol(tbl) == 1) {
     tbl %>%
       assign_names('size') %>%
       as.data.frame(stringsAsFactors = FALSE) %>%
-      mutate_(size = ~as.numeric(size), circ = NA)
+      mutate(size = as.numeric(.data$size), circ = NA)
   } else {
     stop('Too many measurement columns')
   }
@@ -266,6 +268,7 @@ expand_letters <- function(len, letters) {
 #   \item{left}{The rough left edge of the plate.}
 #   \item{right}{The rough right edge of the plate.}
 #   \item{bot}{The rough bottom edge of the plate.}
+#' @importFrom rlang .data
 
 rough_crop <- function(img, thresh, invert, pad) {
 
@@ -275,30 +278,32 @@ rough_crop <- function(img, thresh, invert, pad) {
     rowSums(small) %>%
     find_valleys(thr = thresh * nrow(small), invert = invert) %>%
     mutate_at(vars(-n), funs(. * 10)) %>%
-    rename_(plate_x = ~mid, plate_row = ~n, rough_l = ~left, rough_r = ~right)
+    rename(plate_x = 'mid', plate_row = 'n', rough_l = 'left', rough_r = 'right')
 
   cols <-
     colSums(small) %>%
     find_valleys(thr = thresh * ncol(small), invert = invert) %>%
     mutate_at(vars(-n), funs(. * 10)) %>%
-    rename_(plate_y = ~mid, plate_col = ~n, rough_t = ~left, rough_b = ~right)
+    rename(plate_y = 'mid', plate_col = 'n', rough_t = 'left', rough_b = 'right')
 
   # Generate all combinations of detected rows and columns
   expand.grid(rows$plate_row, cols$plate_col) %>%
-    rename_(plate_row = ~Var1, plate_col = ~Var2) %>%
+    rename(plate_row = 'Var1', plate_col = 'Var2') %>%
     left_join(rows, by = 'plate_row') %>%
     left_join(cols, by = 'plate_col') %>%
-    mutate_(
+    mutate(
       # Add padding if desired
-      rough_l = ~rough_l - pad[1],
-      rough_r = ~rough_r + pad[2],
-      rough_t = ~rough_t - pad[3],
-      rough_b = ~rough_b + pad[4],
+      rough_l = .data$rough_l - pad[1],
+      rough_r = .data$rough_r + pad[2],
+      rough_t = .data$rough_t - pad[3],
+      rough_b = .data$rough_b + pad[4]
+    ) %>%
+    mutate(
       # Limit edges if they excede dimensions of image after padding
-      rough_l = ~ifelse(rough_l < 1, 1, rough_l),
-      rough_r = ~ifelse(rough_r > nrow(img), nrow(img), rough_r),
-      rough_t = ~ifelse(rough_t < 1, 1, rough_t),
-      rough_b = ~ifelse(rough_b > ncol(img), ncol(img), rough_b)
+      rough_l = ifelse(.data$rough_l < 1, 1, .data$rough_l),
+      rough_r = ifelse(.data$rough_r > nrow(img), nrow(img), .data$rough_r),
+      rough_t = ifelse(.data$rough_t < 1, 1, .data$rough_t),
+      rough_b = ifelse(.data$rough_b > ncol(img), ncol(img), .data$rough_b)
     ) %>%
     # Remove any detected rough cropped objects that are less than 100x100 pixels
     filter(
@@ -310,7 +315,10 @@ rough_crop <- function(img, thresh, invert, pad) {
       plate_x = as.integer(round(plate_x)),
       plate_y = as.integer(round(plate_y))
     ) %>%
-    select_(~position, ~plate_row, ~plate_col, ~plate_x, ~plate_y, ~rough_l, ~rough_r, ~rough_t, ~rough_b)
+    select(
+      'position', 'plate_row', 'plate_col', 'plate_x', 'plate_y', 'rough_l',
+      'rough_r', 'rough_t', 'rough_b'
+    )
 }
 
 
@@ -449,6 +457,7 @@ fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols)
 
 # Compute Object Features
 # Adapted from \link[EBImage]{computeFeatures}
+#' @importFrom rlang .data
 
 object_features <- function(img) {
 
@@ -460,14 +469,20 @@ object_features <- function(img) {
     EBImage::ocontour(m) %>%
     lapply(as.data.frame) %>%
     bind_rows(.id = 'obj') %>%
-    mutate_(obj = ~as.integer(obj)) %>%
+    mutate(obj = as.integer(.data$obj)) %>%
     group_by(obj) %>%
-    mutate_(radius = ~sqrt((V1 - mean(V1))^2 + (V2 - mean(V2))^2)) %>%
-    summarise_(
-      perimeter   = ~n(),
-      radius_mean = ~mean(radius),
-      radius_min  = ~min(radius),
-      radius_max  = ~max(radius)
+    mutate(
+      radius =
+        sqrt(
+          (.data$V1 - mean(.data$V1))^2 +
+          (.data$V2 - mean(.data$V2))^2
+        )
+    ) %>%
+    summarise(
+      perimeter   = n(),
+      radius_mean = mean(.data$radius),
+      radius_min  = min(.data$radius),
+      radius_max  = max(.data$radius)
     )
 
   # Split object indices
@@ -517,8 +532,10 @@ object_features <- function(img) {
     nwhich = nn$which
   ) %>%
     left_join(radii, by = 'obj') %>%
-    select_(~obj, ~x, ~y, ~area, ~perimeter, ~radius_mean, ~radius_max,
-            ~radius_min, ~eccen, ~theta, ~major, ~minor, ~ndist, ~nwhich)
+    select(
+      'obj', 'x', 'y', 'area', 'perimeter', 'radius_mean', 'radius_max',
+      'radius_min', 'eccen', 'theta', 'major', 'minor', 'ndist', 'nwhich'
+    )
 }
 
 

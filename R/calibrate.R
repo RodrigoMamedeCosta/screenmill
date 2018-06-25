@@ -140,7 +140,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
     rough <- screenmill:::rough_crop(img, thresh, invert, rough_pad)
     rough$template <- basename(template)
   } else {
-    rough <- select_(default_crop, ~position, ~plate_row, ~plate_col, ~plate_x, ~plate_y, ~rough_l, ~rough_r, ~rough_t, ~rough_b)
+    rough <- select(default_crop, 'position', 'plate_row', 'plate_col', 'plate_x', 'plate_y', 'rough_l', 'rough_r', 'rough_t', 'rough_b')
   }
 
   if (nrow(rough) > length(anno$position)) warning('For ', basename(template), ', keeping positions (', paste(anno$position, collapse = ', '), ') of ', nrow(rough), ' available.\n', call. = FALSE)
@@ -166,14 +166,14 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
         return(result)
       })
   } else {
-    fine <- select_(default_crop, ~rotate, ~dplyr::matches('fine'))
+    fine <- select(default_crop, 'rotate', tidyselect::matches('fine'))
   }
 
   # Combine rough and fine crop coordinates
   crop <-
     left_join(rough, fine, by = c('template', 'position')) %>%
-    mutate_(invert = ~invert) %>%
-    select_(~template, ~position, ~everything())
+    mutate(invert = invert) %>%
+    select('template', 'position', everything())
 
   # Determine grid coordinates
   message(basename(template), ': locating colony grid')
@@ -203,8 +203,8 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
       } else {
         # Annotate result with template, position, strain collection and plate
         result <-
-          mutate_(result, template = ~basename(template), position = ~p) %>%
-          left_join(mutate_(anno, template = ~basename(template)), by = c('template', 'position'))
+          mutate(result, template = basename(template), position = p) %>%
+          left_join(mutate(anno, template = basename(template)), by = c('template', 'position'))
 
         # Check the grid size and compare to expected plate size
         replicates <- nrow(result) / nrow(keyi)

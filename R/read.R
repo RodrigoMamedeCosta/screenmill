@@ -348,14 +348,17 @@ read_cm <- function(path, replicates, dim = c(2, 3)) {
   libcols <- dim[2] * sqrt(libdens / (dim[1] * dim[2]))
 
   test <- cm %>%
-    mutate_(id = ~rep(plates$id, length.out = nobs, each = density)) %>%
+    mutate(id = rep(plates$id, length.out = nobs, each = density)) %>%
     left_join(plates, by = 'id') %>%
-    mutate_(
-      row       = ~map_row(librows, replicates, nobs),
-      column    = ~map_column(libcols, replicates, nrows, ncols, nobs),
-      replicate = ~map_replicate(librows, libcols, replicates, nobs)
+    mutate(
+      row       = map_row(librows, replicates, nobs),
+      column    = map_column(libcols, replicates, nrows, ncols, nobs),
+      replicate = map_replicate(librows, libcols, replicates, nobs)
     ) %>%
-    select_(~id, ~scan_name, ~scan_cond, ~plate, ~row, ~column, ~replicate, ~size, ~circ)
+    select(
+      'id', 'scan_name', 'scan_cond', 'plate', 'row', 'column', 'replicate',
+      'size', 'circ'
+    )
 }
 
 #--------------------------------------------------------------------------------------------------
@@ -388,6 +391,7 @@ read_cm <- function(path, replicates, dim = c(2, 3)) {
 #' }
 #'
 #' @importFrom tidyr gather
+#' @importFrom rlang !!! .data
 #' @export
 
 read_dr <- function(path, match = 'Query\tCondition\tPlate #\tRow\tColumn') {
@@ -419,33 +423,37 @@ read_dr <- function(path, match = 'Query\tCondition\tPlate #\tRow\tColumn') {
     assign_names(colnames) %>%
     as.data.frame(stringsAsFactors = FALSE) %>%
     # Select and rename important columns
-    select_(
-      scan_name = ~Query,
-      scan_cond = ~Condition,
-      plate     = ~`Plate #`,
-      row       = ~Row,
-      column    = ~Column,
-      ~contains('Colony Size')
+    select(
+      scan_name = 'Query',
+      scan_cond = 'Condition',
+      plate     = 'Plate #',
+      row       = 'Row',
+      column    = 'Column',
+      tidyselect::contains('Colony Size')
     ) %>%
     # Gather colony size into single column
-    gather('colony_dr', 'size_dr', contains('Colony Size')) %>%
+    gather('colony_dr', 'size_dr', tidyselect::contains('Colony Size')) %>%
     # Fix columns
-    mutate_(
-      scan_name = ~as.character(scan_name),
-      scan_cond = ~ifelse(is.na(scan_cond) | scan_cond == '', 'none', scan_cond),
-      plate     = ~as.integer(gsub('[][]', '', plate)), # remove brackets
-      column    = ~as.integer(column),
-      colony_dr = ~as.integer(gsub('[^0-9]*', '', colony_dr)), # remove text
-      replicate = ~as.integer(names(replicate_map[colony_dr])),
-      excluded_query   = ~grepl('\\*', size_dr),
-      excluded_control = ~grepl('\\^', size_dr),
-      size_dr   = ~as.numeric(gsub('\\*|\\^', '', size_dr)) # remove *^ flags
+    mutate(
+      scan_name = as.character(.data$scan_name),
+      scan_cond = ifelse(is.na(.data$scan_cond) | .data$scan_cond == '', 'none', .data$scan_cond),
+      plate     = as.integer(gsub('[][]', '', .data$plate)), # remove brackets
+      column    = as.integer(.data$column),
+      colony_dr = as.integer(gsub('[^0-9]*', '', .data$colony_dr)), # remove text
+      replicate = as.integer(names(replicate_map[.data$colony_dr])),
+      excluded_query   = grepl('\\*', .data$size_dr),
+      excluded_control = grepl('\\^', .data$size_dr),
+      size_dr   = as.numeric(gsub('\\*|\\^', '', .data$size_dr)) # remove *^ flags
     ) %>%
     # Sort the data
-    arrange_(~scan_name, ~scan_cond, ~plate, ~row, ~column, ~replicate) %>%
-    select_(~scan_name, ~scan_cond, ~plate, ~row, ~column, ~replicate,
-            ~size_dr, ~excluded_query, ~excluded_control) %>%
-    na.omit
+    arrange(!!!rlang::syms(
+      c('scan_name', 'scan_cond', 'plate', 'row', 'column', 'replicate')
+    )) %>%
+    select(
+      'scan_name', 'scan_cond', 'plate', 'row', 'column', 'replicate',
+      'size_dr', 'excluded_query', 'excluded_control'
+    ) %>%
+    na.omit()
 }
 
 
