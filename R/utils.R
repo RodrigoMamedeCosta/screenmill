@@ -210,8 +210,8 @@ plate_gather <- function(path,
   if (!hasName(data, row)) return(NULL)
 
   # Gather every column that isn't "row" into value column. Infer types.
-  data$plate <- plate_numb
-  tidyr::gather(data, key = 'column', value = !!value, -!!row, convert = T)
+  tidyr::gather(data, key = 'column', value = !!value, -!!row, convert = T) %>%
+    mutate(plate = plate_numb)
 }
 
 # Utils: new_strain_collection ------------------------------------------------
