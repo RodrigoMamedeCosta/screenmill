@@ -283,7 +283,7 @@ read_media <- function(dir, file = 'screenmill-media.csv') {
 #' - *end_humidity* - The ending humidity at the end of the experiment.
 #'
 #' @importFrom stringr str_extract
-#' @importFrom purrr map reduce map_df discard
+#' @importFrom purrr map reduce map_df keep
 #' @export
 
 read_plate_layout <- function(dir) {
