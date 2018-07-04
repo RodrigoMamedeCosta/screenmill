@@ -32,15 +32,24 @@ devtools::install_github('EricEdwardBryant/screenmill')
 
 # Usage
 
+
+Rothstein lab members should install [rothfreezer](https://github.com/ericedwardbryant/rothfreezer)
+as the default annotation database (i.e. no need to change screenmill options)
+
+Non Rothstein lab members should manage their own annotation tables which can
+be used with screenmill by setting screenmill options. Expected fields 
+for these tables are described in `?screenmill::annotate`.
+
+Screenmill annotations, calibrations and measurements are saved as CSVs 
+in the processed directory. Re-running this script on a directory that has
+already been processed will synchronize the project with the latest annotations
+while leaving everything else untouched. This is usefull if a key needs to 
+be fixed for many projects.
+
 ```
 library(screenmill)
 
-# Rothstein lab members should install github.com/ericedwardbryant/rothfreezer
-# as the default annotation database (i.e. no need to change screenmill options)
-
-# Non Rothstein lab members should manage their own annotation tables which can
-# be used with screenmill by setting the following options. These
-# are all dataframes with expected fields described in ?screenmill::annotate
+# Non Rothstein lab members should set these options. See ?screenmill::annotate for help
 options(
   screenmill.queries                = custom_queries_dataframe,
   screenmill.strain_collections     = custom_collections_dataframe,
@@ -51,11 +60,6 @@ options(
 
 dir = 'path/to/directory-of-plate-images'
 
-# Screenmill annotations, calibrations and measurements are saved as CSVs 
-# in the processed directory. Re-running this script on a directory that has
-# already been processed will synchronize the project with the latest annotations
-# while leaving everything else untouched. This is usefull if a key needs to 
-# be fixed for many projects.
 annotate(dir)
 calibrate(dir, grid_rows = 32, grid_cols = 48)
 measure(dir)
@@ -82,5 +86,5 @@ data <- map_df(dirs, read_screenmill)
 - Efficient quantification of time-series colony growth experiments.
 - Individually crop colonies and generate colony growth kymographs.
 - Supports measurement of muliple plates in a single image (e.g. multiple plates imaged on a large flatbed scanner).
-- Tools for working with [ScreenMill](http://www.rothsteinlab.com/tools/screen_mill/cm_engine) data.
+- Tools for working with legacy [ScreenMill](http://www.rothsteinlab.com/tools/screen_mill/cm_engine) data.
 
