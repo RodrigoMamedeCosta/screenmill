@@ -46,7 +46,7 @@ already been processed will synchronize the project with the latest annotations
 while leaving everything else untouched. This is usefull if a key needs to 
 be fixed for many projects.
 
-```
+```r
 library(screenmill)
 
 # Non Rothstein lab members should set these options. See ?screenmill::annotate for help
@@ -69,13 +69,13 @@ review(dir)
 After processing images, measurements can be read into an R session
 for analysis and visualization with the following command:
 
-```
+```r
 data <- read_screenmill(dir)
 ```
 
 Want to combine results from multiple projects?
 
-```
+```r
 library(tidyverse)
 dirs <- c('path/to/project1', 'path/to/project2', 'path/to/project3')
 data <- map_df(dirs, read_screenmill)
