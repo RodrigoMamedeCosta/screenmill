@@ -193,7 +193,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
       rotated <- EBImage::rotate(plate, finei$rotate)
       cropped <- with(finei, rotated[fine_l:fine_r, fine_t:fine_b])
 
-      result <- screenmill:::locate_grid(cropped, grid_rows, grid_cols, radius = 1, keyi)
+      result <- screenmill:::locate_grid(cropped, grid_rows, grid_cols, radius = 1)
 
       if (is.null(result)) {
         warning(
@@ -330,7 +330,7 @@ display_plate <- function(img, grid, template, group, position, text.color, grid
 #
 #' @importFrom tidyr complete
 
-locate_grid <- function(img, grid_rows, grid_cols, radius, key) {
+locate_grid <- function(img, grid_rows, grid_cols, radius) {
 
   # Scale image for rough object detection
   rescaled <- EBImage::normalize(img, inputRange = c(0.1, 0.8))
