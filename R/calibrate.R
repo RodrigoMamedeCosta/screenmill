@@ -24,6 +24,11 @@
 #' Defaults to \code{TRUE}.
 #' @param save_plate Should the calibrated plate be saved rather than
 #' displayed (useful when calibrating many plates)? Defaults to \code{!display}.
+#' @param colony_radius If <= 1, the box drawn around colonies will be this
+#' fraction of half the average distance between rows and columns (Defaults to 1).
+#' If > 1, the box will have a radius of this many pixels.
+#' @param max_smooth Maximum number of pixels to allow when smoothing row and
+#' column positions of individual colonies.
 #'
 #' @details
 #' Crop calibration procedes through the following 3 steps:
@@ -47,7 +52,8 @@ calibrate <- function(dir = '.', grid_rows, grid_cols,
                       rotate = 90, range = 2, thresh = 0.03, invert = TRUE,
                       rough_pad = c(0, 0, 0, 0), fine_pad = c(0, 0, 0, 0),
                       default_crop = NULL,
-                      overwrite = FALSE, display = TRUE, save_plate = !display) {
+                      overwrite = FALSE, display = TRUE, save_plate = !display,
+                      colony_radius = 1, max_smooth = 5) {
 
   status <- screenmill_status(dir)
   assert_that(
@@ -126,7 +132,7 @@ calibrate_addin <- function() {
 
 calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, thresh, invert, rough_pad,
                                fine_pad, rotate, range, display, crp, grd, save_plate,
-                               default_crop) {
+                               default_crop, colony_radius, max_smooth) {
 
   # Read image in greyscale format
   message(basename(template), ': reading image and cropping plates')
@@ -193,7 +199,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
       rotated <- EBImage::rotate(plate, finei$rotate)
       cropped <- with(finei, rotated[fine_l:fine_r, fine_t:fine_b])
 
-      result <- screenmill:::locate_grid(cropped, grid_rows, grid_cols, radius = 1)
+      result <- screenmill:::locate_grid(cropped, grid_rows, grid_cols, radius = colony_radius, max_smooth = max_smooth)
 
       if (is.null(result)) {
         warning(
@@ -330,7 +336,7 @@ display_plate <- function(img, grid, template, group, position, text.color, grid
 #
 #' @importFrom tidyr complete
 
-locate_grid <- function(img, grid_rows, grid_cols, radius) {
+locate_grid <- function(img, grid_rows, grid_cols, radius, max_smooth = 4) {
 
   # Scale image for rough object detection
   rescaled <- EBImage::normalize(img, inputRange = c(0.1, 0.8))
@@ -408,7 +414,8 @@ locate_grid <- function(img, grid_rows, grid_cols, radius) {
     mutate(
       # If missing, use estimated center
       y = ifelse(is.na(y), row_centers[colony_row], y),
-      y = if (n() < 10) y else round(predict(smooth.spline(colony_col, y), colony_col)[[2]])
+      y = if (n() < 10) y else round(predict(smooth.spline(c(0, colony_col, max(colony_col) + 1), c(median(y), y, median(y))), colony_col)[[2]]),
+      y = ifelse(abs(y - median(y)) <= max_smooth, y, row_centers[colony_row])
     ) %>%
     # Determine column locations
     group_by(colony_col) %>%
@@ -416,7 +423,8 @@ locate_grid <- function(img, grid_rows, grid_cols, radius) {
     mutate(
       # If missing, use estimated center
       x = ifelse(is.na(x), col_centers[colony_col], x),
-      x = if (n() < 10) y else round(predict(smooth.spline(colony_row, x), colony_row)[[2]])
+      x = if (n() < 10) x else round(predict(smooth.spline(c(0, colony_row, max(colony_row) + 1), c(median(x), x, median(y))), colony_row)[[2]]),
+      x = ifelse(abs(x - median(x)) <= max_smooth, x, col_centers[colony_col])
     ) %>%
     ungroup
 
@@ -424,7 +432,9 @@ locate_grid <- function(img, grid_rows, grid_cols, radius) {
   selection <-
     fine_grid %>%
     mutate(
-      radius = round(((mean(diff(rows)) + mean(diff(cols))) / 4) * radius),
+      # Radius less than or equal to 1 will do fraction of average row and coulmn width, otherwise fixed
+      # radius in pixel units is used
+      radius = { if (radius <= 1) round(((mean(diff(rows)) + mean(diff(cols))) / 4) * radius) else radius },
       l = x - radius,
       r = x + radius,
       t = y - radius,
