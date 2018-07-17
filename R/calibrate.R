@@ -99,7 +99,7 @@ calibrate <- function(dir = '.', grid_rows, grid_cols,
     annotation, key, grid_rows, grid_cols, thresh, invert, rough_pad,
     fine_pad, rotate, range, display,
     status$path$calibration_crop, status$path$calibration_grid,
-    save_plate, default_crop
+    save_plate, default_crop, colony_radius, max_smooth
   )
 
   message('Finished calibration in ', format(round(Sys.time() - time, 2)))
@@ -146,7 +146,11 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
     rough <- screenmill:::rough_crop(img, thresh, invert, rough_pad)
     rough$template <- basename(template)
   } else {
-    rough <- select(default_crop, 'position', 'plate_row', 'plate_col', 'plate_x', 'plate_y', 'rough_l', 'rough_r', 'rough_t', 'rough_b')
+    rough <-
+      default_crop[
+        default_crop$template == basename(template),
+        c('template', 'position', 'plate_row', 'plate_col', 'plate_x', 'plate_y',
+          'rough_l', 'rough_r', 'rough_t', 'rough_b')]
   }
 
   if (nrow(rough) > length(anno$position)) warning('For ', basename(template), ', keeping positions (', paste(anno$position, collapse = ', '), ') of ', nrow(rough), ' available.\n', call. = FALSE)
@@ -172,7 +176,12 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
         return(result)
       })
   } else {
-    fine <- select(default_crop, 'rotate', tidyselect::matches('fine'))
+    fine <-
+      default_crop[
+        default_crop$template == basename(template),
+        c('template', 'position', 'rotate', 'fine_l', 'fine_r', 'fine_t', 'fine_b')]
+
+#select(default_crop, 'rotate', tidyselect::matches('fine'))
   }
 
   # Combine rough and fine crop coordinates
