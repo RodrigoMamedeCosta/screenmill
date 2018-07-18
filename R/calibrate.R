@@ -180,8 +180,6 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
       default_crop[
         default_crop$template == basename(template),
         c('template', 'position', 'rotate', 'fine_l', 'fine_r', 'fine_t', 'fine_b')]
-
-#select(default_crop, 'rotate', tidyselect::matches('fine'))
   }
 
   # Combine rough and fine crop coordinates
