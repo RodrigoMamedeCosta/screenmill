@@ -129,7 +129,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
                                default_crop) {
 
   # Read image in greyscale format
-  message(basename(template), ': reading image and cropping plates')
+  message('\n', basename(template), ': reading image and cropping plates')
   img <- screenmill:::read_greyscale(template)
 
   # Filter annotation data for this template
@@ -176,7 +176,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
     select('template', 'position', everything())
 
   # Determine grid coordinates
-  message(basename(template), ': locating colony grid')
+  message('\n', basename(template), ': locating colony grid')
   progress <- progress_estimated(length(anno$position))
   grid <-
     map_df(1:length(anno$position), function(i) {
