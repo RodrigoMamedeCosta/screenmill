@@ -7,7 +7,8 @@
 calibrate(dir = ".", grid_rows, grid_cols, rotate = 90, range = 2,
   thresh = 0.03, invert = TRUE, rough_pad = c(0, 0, 0, 0),
   fine_pad = c(0, 0, 0, 0), default_crop = NULL, overwrite = FALSE,
-  display = TRUE, save_plate = !display)
+  display = TRUE, save_plate = !display, colony_radius = 1,
+  max_smooth = 5)
 }
 \arguments{
 \item{dir}{Directory of images to process.}
@@ -40,6 +41,13 @@ Defaults to \code{TRUE}.}
 
 \item{save_plate}{Should the calibrated plate be saved rather than
 displayed (useful when calibrating many plates)? Defaults to \code{!display}.}
+
+\item{colony_radius}{If <= 1, the box drawn around colonies will be this
+fraction of half the average distance between rows and columns (Defaults to 1).
+If > 1, the box will have a radius of this many pixels.}
+
+\item{max_smooth}{Maximum number of pixels to allow when smoothing row and
+column positions of individual colonies.}
 }
 \description{
 This function calibrates plate cropping and rotation parameters for an image
