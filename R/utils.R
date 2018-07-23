@@ -435,8 +435,8 @@ fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols)
   if (nrow(good) < 20) {
     default <-
       data_frame(
-        rotate = rotate,
-        fine_l = 1, fine_r = ncol(clean), fine_t = 1, fine_b = nrow(clean)
+        rotate = angle,
+        fine_l = 1, fine_r = nrow(clean), fine_t = 1, fine_b = ncol(clean)
       )
     return(default)
   }
