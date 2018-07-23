@@ -387,18 +387,43 @@ fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols)
     EBImage::gblur(norm, sigma = 6) %>%
     EBImage::thresh(w = 20, h = 20, offset = 0.01)
 
-  # Determine rotation angle and rotate plate
-  angle   <- screenmill:::grid_angle(thr, rotate, range = range)
-  rotated <- EBImage::rotate(thr, angle)
+  # Remove artifacts from image
+  obj <- EBImage::watershed(EBImage::distmap(thr))
 
-  # obj <- EBImage::bwlabel(rotated)
+  # Calculate object features, identify dubious objects and remove them
+  feat <- screenmill:::object_features(obj)
+  crap <-
+    with(feat, feat[
+      # generally speaking larger objects tend to underestimate the perimeter,
+      # so negative values are rare, but large weirdly shaped objects will
+      # have large perimeters relative to the expected perimeter
+      # given the average radius
+      (2 * pi * radius_mean) - perimeter < -5 |
+      area  > mean(area) + (5 * mad(area)) |
+      area  < 10 |
+      eccen > 0.8 |
+      ndist < median(ndist) - (15 * mad(ndist)),
+    ])
+  good  <- with(feat, feat[!(obj %in% crap$obj), ])
+  clean <- EBImage::rmObjects(obj, crap$obj) > 0
+
+  # Determine rotation angle and rotate plate
+  angle   <- screenmill:::grid_angle(clean, rotate, range = range)
+  rotated <- EBImage::rotate(clean, angle)
+
+  # One more round of cleaning
   obj <- EBImage::watershed(EBImage::distmap(rotated))
 
   # Calculate object features, identify dubious objects and remove them
   feat <- screenmill:::object_features(obj)
   crap <-
     with(feat, feat[
-      area  > mean(area) + (5 * mad(area)) |
+      # generally speaking larger objects tend to underestimate the perimeter,
+      # so negative values are rare, but large weirdly shaped objects will
+      # have large perimeters relative to the expected perimeter
+      # given the average radius
+      (2 * pi * radius_mean) - perimeter < -5 |
+        area  > mean(area) + (5 * mad(area)) |
         area  < 10 |
         eccen > 0.8 |
         ndist < median(ndist) - (15 * mad(ndist)),
@@ -417,13 +442,46 @@ fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols)
   }
 
   # Identify edges of grid
-
-  # Get the median of the edge most objects given expected rows/cols, and add 80% of grid spacing
   grid_spacing <- median(good$ndist)
-  l_edge <- median(sort(good$x, decreasing = FALSE)[1:n_grid_rows]) - (grid_spacing * 0.7)
-  r_edge <- median(sort(good$x, decreasing =  TRUE)[1:n_grid_rows]) + (grid_spacing * 0.7)
-  t_edge <- median(sort(good$y, decreasing = FALSE)[1:n_grid_cols]) - (grid_spacing * 0.7)
-  b_edge <- median(sort(good$y, decreasing =  TRUE)[1:n_grid_cols]) + (grid_spacing * 0.7)
+
+  clusters <-
+    good %>%
+    mutate(
+      x_cluster = cutree(hclust(dist(x)), h = grid_spacing),
+      y_cluster = cutree(hclust(dist(y)), h = grid_spacing)
+    )
+
+  row_clusters <-
+    clusters %>%
+    group_by(y_cluster) %>%
+    summarise(
+      n = n(),
+      y = median(y)
+    ) %>%
+    ungroup() %>%
+    top_n(n_grid_rows, wt = n) %>% # keep clusters based on most objects
+    filter(y == max(y) | y == min(y))
+
+  col_clusters <-
+    clusters %>%
+    group_by(x_cluster) %>%
+    summarise(
+      n = n(),
+      x = median(x)
+    ) %>%
+    ungroup() %>%
+    top_n(n_grid_cols, wt = n) %>% # keep clusters based on most objects
+    filter(x == max(x) | x == min(x))
+
+  # Get the median of the edge most objects given expected rows/cols, and add 75% of grid spacing
+  l_edge <- min(col_clusters$x) - (grid_spacing * 0.75)
+  r_edge <- max(col_clusters$x) + (grid_spacing * 0.75)
+  t_edge <- min(row_clusters$y) - (grid_spacing * 0.75)
+  b_edge <- max(row_clusters$y) + (grid_spacing * 0.75)
+
+  EBImage::display(EBImage::rotate(img, angle))
+  EBImage::display(clean)
+  abline(v = c(l_edge, r_edge), h = c(t_edge, b_edge), col = 'red')
 
   # Limit fine cropping to 10% of rough crop dimensions
   n_col_pixels <- nrow(clean)
