@@ -360,7 +360,9 @@ grid_angle <- function(img, rough, range) {
 
   angle <- range_deg[which.min(median_abs_diff)]
 
-  return(rough + angle)
+  if (length(angle)) result <- rough + angle else result <- rough
+
+  return(result)
 }
 
 
@@ -526,8 +528,12 @@ object_features <- function(img) {
   m <- EBImage::imageData(img)
 
   # Compute size features based on object contour
+  objs <- EBImage::ocontour(m)
+
+  if (length(objs) == 0L) return(object_features_default())
+
   radii <-
-    EBImage::ocontour(m) %>%
+    objs %>%
     lapply(as.data.frame) %>%
     bind_rows(.id = 'obj') %>%
     mutate(obj = as.integer(.data$obj)) %>%
@@ -599,6 +605,24 @@ object_features <- function(img) {
     )
 }
 
+object_features_default <- function() {
+  tibble::data_frame(
+    obj         = integer(0),
+    x           = numeric(0),
+    y           = numeric(0),
+    area        = numeric(0),
+    perimeter   = numeric(0),
+    radius_mean = numeric(0),
+    radius_max  = numeric(0),
+    radius_min  = numeric(0),
+    eccen       = numeric(0),
+    theta       = numeric(0),
+    major       = numeric(0),
+    minor       = numeric(0),
+    ndist       = integer(0),
+    nwhich      = integer(0)
+  )
+}
 
 # Determine column or row breaks for grid
 #
