@@ -285,11 +285,37 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
       return(result)
     })
 
-  if (nrow(grid) > 0) grid$excluded <- FALSE
+  if (nrow(grid) > 0) {
+    grid$excluded <- FALSE
+  } else {
+    grid <- grid_empty()
+  }
 
   # Write results to file
   write_csv(crop, crp, append = file.exists(crp))
   write_csv(grid, grd, append = file.exists(grd))
+}
+
+grid_empty <- function() {
+  tibble::data_frame(
+    template             = character(0),
+    position             = integer(0),
+    group                = integer(0),
+    strain_collection_id = character(0),
+    plate                = integer(0),
+    row                  = integer(0),
+    column               = integer(0),
+    replicate            = integer(0),
+    colony_row           = integer(0),
+    colony_col           = integer(0),
+    x                    = integer(0),
+    y                    = integer(0),
+    l                    = integer(0),
+    r                    = integer(0),
+    t                    = integer(0),
+    b                    = integer(0),
+    excluded             = logical(0)
+  )
 }
 
 
