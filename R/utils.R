@@ -90,7 +90,7 @@ parse_measurements <- function(lines, by) {
     tbl %>%
       assign_names(c('size', 'circ')) %>%
       as.data.frame(stringsAsFactors = FALSE) %>%
-      mutate(size = as.numeric(.data$size), circ = ~as.numeric(.data$circ))
+      mutate(size = as.numeric(.data$size), circ = as.numeric(.data$circ))
   } else if (ncol(tbl) == 1) {
     tbl %>%
       assign_names('size') %>%
