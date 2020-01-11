@@ -27,13 +27,13 @@ biocLite()
 install.packages('devtools', dependencies = T)
 
 # Install the latest version of screenmill
-devtools::install_github('EricEdwardBryant/screenmill')
+devtools::install_github('EricBryantPhD/screenmill')
 ```
 
 # Usage
 
 
-Rothstein lab members should install [rothfreezer](https://github.com/ericedwardbryant/rothfreezer)
+Rothstein lab members should install [rothfreezer](https://github.com/ericbryantphd/rothfreezer)
 as the default annotation database (i.e. no need to change screenmill options)
 
 Non Rothstein lab members should manage their own annotation tables which can
