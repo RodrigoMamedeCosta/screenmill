@@ -429,6 +429,10 @@ locate_grid <- function(img, grid_rows, grid_cols, radius, max_smooth = 4) {
     ) %>%
     filter(colony_row >= 1L, colony_col >= 1L, colony_row <= grid_rows, colony_col <= grid_cols)
 
+  # this catches empty plates (no real colonies)
+  # will check this against empty template positions
+  if (nrow(objs) == 0) return(NULL)
+
   # If multiple objects are found in a grid location, choose largest object
   rough_grid <-
     objs %>%
