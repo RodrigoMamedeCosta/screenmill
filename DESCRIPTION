@@ -1,9 +1,11 @@
 Package: screenmill
 Type: Package
 Title: Tools for working with ScreenMill data
-Version: 0.0.7
-Date: 2015-05-28
-Authors@R: 'Eric Bryant <eeb2139@columbia.edu> [aut,cre]'
+Version: 0.0.8
+Date: 2021-02-12
+Authors@R: c(
+    person("Eric", "Bryant", email = "eeb2139@columbia.edu", role = c("aut","cre")),
+    person("Robert", "Reid", email = "rr381@cumc.columbia.edu", role = c("aut","edt")))
 Maintainer: 'Eric Bryant' <eeb2139@columbia.edu>
 Description: This package includes tools for working with solid agar colony
     measurement screens that have been processed with ScreenMill. For more
