@@ -20,14 +20,15 @@ This package can be installed from GitHub by following the instructions below.
 
 ```r
 # Install the latest version of Bioconductor
-source("http://bioconductor.org/biocLite.R")
-biocLite()
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(version = "3.15")
 
 # Install the latest version of devtools
 install.packages('devtools', dependencies = T)
 
 # Install the latest version of screenmill
-devtools::install_github('EricBryantPhD/screenmill')
+devtools::install_github('RobertJDReid/screenmill')
 ```
 
 # Usage

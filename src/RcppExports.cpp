@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // measureColonies
 List measureColonies(NumericMatrix img, NumericVector l, NumericVector r, NumericVector t, NumericVector b, Function background);
 RcppExport SEXP _screenmill_measureColonies(SEXP imgSEXP, SEXP lSEXP, SEXP rSEXP, SEXP tSEXP, SEXP bSEXP, SEXP backgroundSEXP) {

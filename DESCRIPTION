@@ -1,7 +1,7 @@
 Package: screenmill
 Type: Package
 Title: Tools for working with ScreenMill data
-Version: 0.0.8
+Version: 0.1.0
 Date: 2021-02-12
 Authors@R: c(
     person("Eric", "Bryant", email = "eeb2139@columbia.edu", role = c("aut","cre")),
@@ -36,5 +36,5 @@ Suggests:
     testthat,
     rothfreezer
 Remotes:
-    github::EricBryantPhD/rothfreezer
+    github::RobertJDReid/rothfreezer
 RoxygenNote: 6.0.1

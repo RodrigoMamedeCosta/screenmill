@@ -142,13 +142,16 @@ annotate <- function(dir = '.', queries,
     vars$ts    <- 'Yes'
 
     # Table 1: Image groups keys | file, time
-    vars$tbl1 <- read_csv('file,time,group\n', col_types = 'cci')
+    #vars$tbl1 <- read_csv('file,time,group\n', col_types = 'cci') # GM update 9/2022
+    vars$tbl1 <- read_csv(I('file,time,group\n'), col_types = 'cci')
 
     # Table 2: Group annotation keys | group, template
-    vars$tbl2 <- read_csv('group,template,start,positions,temperature\n', col_types = 'iccin')
-
+    #vars$tbl2 <- read_csv('group,template,start,positions,temperature\n', col_types = 'iccin') # GM update 9/2022
+    vars$tbl2 <- read_csv(I('group,template,start,positions,temperature\n'), col_types = 'iccin')
+    
     # Table 3: Plate annotation keys | group, template, position
-    vars$tbl3 <- read_csv('group,template,position,strain_collection_id,plate,query_id,treatment_id,media_id\n', col_types = 'iciciccc')
+    #vars$tbl3 <- read_csv('group,template,position,strain_collection_id,plate,query_id,treatment_id,media_id\n', col_types = 'iciciccc') # GM update 9/2022
+    vars$tbl3 <- read_csv(I('group,template,position,strain_collection_id,plate,query_id,treatment_id,media_id\n'), col_types = 'iciciccc')
   } else {
     # Restore variables
     vars$tbl <-
@@ -346,10 +349,12 @@ annotate <- function(dir = '.', queries,
           tbl2() %>%
           select(group, template, positions) %>%
           group_by(group, template) %>%
-          do(data_frame(position = 1:.$positions[1])) %>%
+          #do(data_frame(position = 1:.$positions[1])) %>% #GM update 9/2022
+          do(tibble(position = 1:.$positions[1])) %>%
           ungroup %>%
           left_join(vars$tbl3, by = c('group', 'template', 'position')) %>%
-          mutate_all(funs(ifelse(is.na(.), '', .)))
+          #mutate_all(funs(ifelse(is.na(.), '', .))) #GM update 9/2022
+          mutate_all(list(~ifelse(is.na(.), '', .)))
         vars$tbl3
       } else {
         vars$tbl3 <- hot_to_r(input$tbl3) %>% filter(complete.cases(.))
@@ -385,7 +390,8 @@ annotate <- function(dir = '.', queries,
         left_join(tbl1(), by = 'file') %>%
         left_join(tbl2(), by = 'group') %>%
         left_join(tbl3(), by = c('group', 'template')) %>%
-        mutate_all(funs(ifelse(. == '', NA, .))) %>% # replace empty string with NA
+        #mutate_all(funs(ifelse(. == '', NA, .))) %>% # replace empty string with NA # GM update 9/2022
+        mutate_all(list(~ifelse(. == '', NA, .))) %>% # replace empty string with NA
         mutate(
           plate = as.integer(plate),
           date  = as.Date(start),
@@ -564,7 +570,8 @@ read_image_data <- function(dir, ext =  '\\.tiff?$|\\.jpe?g$|\\.png$') {
 
   if (length(paths) < 1) stop('No images were found in this directory.')
 
-  data_frame(
+  #data_frame( #GM update 9/2022
+  tibble(
     path  = paths,
     file  = basename(path),
     time  = file.info(path)$mtime
@@ -609,7 +616,8 @@ check_annotation_tables <- function(key_info, keys, queries, treatments, media) 
 
 
 guess_groups <- function(time) {
-  data_frame(time = time) %>%
+  #data_frame(time = time) %>% # GM update 9/2022
+  tibble(time = time) %>%
     mutate(major = guess_major(time)) %>%
     group_by(major) %>%
     mutate(
