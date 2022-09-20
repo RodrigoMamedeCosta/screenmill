@@ -248,11 +248,11 @@ read_media <- function(dir, file = 'screenmill-media.csv') {
 }
 
 # Read plate layout -------------------------------------------------------------------------------
-#' @md
-#' @title Read plate layout
 #'
 #' Reads a directory of plate layout CSVs exported from Numbers (for mac) into a dataframe.
 #'
+#' @md
+#' @title Read plate layout
 #' @param dir A directory.
 #'
 #' @details To generate a plate layout directory with Numbers, make a separate sheet for each plate

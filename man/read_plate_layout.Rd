@@ -2,9 +2,7 @@
 % Please edit documentation in R/read.R
 \name{read_plate_layout}
 \alias{read_plate_layout}
-\title{Read plate layout
-
-Reads a directory of plate layout CSVs exported from Numbers (for mac) into a dataframe.}
+\title{Read plate layout}
 \usage{
 read_plate_layout(dir)
 }
@@ -12,8 +10,6 @@ read_plate_layout(dir)
 \item{dir}{A directory.}
 }
 \description{
-Read plate layout
-
 Reads a directory of plate layout CSVs exported from Numbers (for mac) into a dataframe.
 }
 \details{
