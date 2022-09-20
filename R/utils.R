@@ -280,15 +280,13 @@ rough_crop <- function(img, thresh, invert, pad) {
   rows <-
     rowSums(small) %>%
     find_valleys(thr = thresh * nrow(small), invert = invert) %>%
-    #mutate_at(vars(-n), funs(. * 10)) %>%
-    mutate_at(vars(-n), list(name = ~(. * 10))) %>%
+    mutate_at(vars(-n), funs(. * 10)) %>%
     rename(plate_x = 'mid', plate_row = 'n', rough_l = 'left', rough_r = 'right')
 
   cols <-
     colSums(small) %>%
     find_valleys(thr = thresh * ncol(small), invert = invert) %>%
-    #mutate_at(vars(-n), funs(. * 10)) %>%
-    mutate_at(vars(-n), list(name = ~(. * 10))) %>%
+    mutate_at(vars(-n), funs(. * 10)) %>%
     rename(plate_y = 'mid', plate_col = 'n', rough_t = 'left', rough_b = 'right')
 
   # Generate all combinations of detected rows and columns
