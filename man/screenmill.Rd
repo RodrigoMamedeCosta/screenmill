@@ -3,7 +3,6 @@
 \docType{package}
 \name{screenmill}
 \alias{screenmill}
-\alias{screenmill-package}
 \title{Screenmill R package}
 \description{
 Screenmill R package

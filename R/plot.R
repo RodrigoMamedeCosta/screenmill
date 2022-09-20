@@ -24,7 +24,7 @@ plot_plates <- function(data, fill, row, col, plate = 'plate',
   loadNamespace('ggplot2')
 
   # These fields are required in `data`
-  data_frame(
+ tibble::tibble(
     row   = data[[row]],
     col   = data[[col]],
     fill  = data[[fill]],

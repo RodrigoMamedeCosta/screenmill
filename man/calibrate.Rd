@@ -4,11 +4,23 @@
 \alias{calibrate}
 \title{Calibrate cropping and rotation parameters}
 \usage{
-calibrate(dir = ".", grid_rows, grid_cols, rotate = 90, range = 2,
-  thresh = 0.03, invert = TRUE, rough_pad = c(0, 0, 0, 0),
-  fine_pad = c(0, 0, 0, 0), default_crop = NULL, overwrite = FALSE,
-  display = TRUE, save_plate = !display, colony_radius = 1,
-  max_smooth = 5)
+calibrate(
+  dir = ".",
+  grid_rows,
+  grid_cols,
+  rotate = 90,
+  range = 2,
+  thresh = 0.03,
+  invert = TRUE,
+  rough_pad = c(0, 0, 0, 0),
+  fine_pad = c(0, 0, 0, 0),
+  default_crop = NULL,
+  overwrite = FALSE,
+  display = TRUE,
+  save_plate = !display,
+  colony_radius = 1,
+  max_smooth = 5
+)
 }
 \arguments{
 \item{dir}{Directory of images to process.}

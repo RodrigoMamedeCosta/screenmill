@@ -165,10 +165,12 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
 
   # Determine fine crop coordinates
   if (is.null(default_crop)) {
-    progress <- dplyr::progress_estimated(length(anno$position))
+    #progress <- dplyr::progress_estimated(length(anno$position))
+    progress <- progress::progress_bar$new(total = length(anno$position))
     fine <-
       purrr::map_df(1:length(anno$position), function(i) {
-        progress$tick()$print()
+        #progress$tick()$print()
+        progress$tick()
         p <- anno$position[i]
         result <- screenmill:::fine_crop(plates[[i]], rotate, range, fine_pad, invert, grid_rows, grid_cols)
         result$template <- basename(template)
@@ -190,10 +192,12 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
 
   # Determine grid coordinates
   message('\n', basename(template), ': locating colony grid')
-  progress <- progress_estimated(length(anno$position))
+  #progress <- progress_estimated(length(anno$position))
+  progress <- progress::progress_bar$new(total = length(anno$position))
   grid <-
     map_df(1:length(anno$position), function(i) {
-      progress$tick()$print()
+      #progress$tick()$print()
+      progress$tick()
       p                <- anno$position[i]
       collection_id    <- anno$strain_collection_id[i]
       collection_plate <- anno$plate[i]
@@ -297,7 +301,8 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
 }
 
 grid_empty <- function() {
-  tibble::data_frame(
+  #tibble::data_frame(
+  tibble::tibble(
     template             = character(0),
     position             = integer(0),
     group                = integer(0),

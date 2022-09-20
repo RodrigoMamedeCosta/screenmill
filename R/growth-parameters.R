@@ -28,7 +28,7 @@
 
 growth_parameters <- function(time, size, ...) {
   # Ensure data is sorted by time
-  data  <- data_frame(time = time, size = size) %>% arrange(time)
+  data  <- tibble::tibble(time = time, size = size) %>% arrange(time)
   time  <- data$time
   # Time and midpoints used to predict
   t_mid <- c(time, (lag(time) + time) / 2) %>% sort %>% unique
@@ -42,7 +42,7 @@ growth_parameters <- function(time, size, ...) {
   y   <- d0$y[i]
   f   <- function(t) predict(fit, t)$y
 
-  data_frame(
+  tibble::tibble(
     # The plateau estimated as the maximum of the fitted curve
     A   = max(d0$y),
     A_t = d0$x[which.max(d0$y)], # Time at max size

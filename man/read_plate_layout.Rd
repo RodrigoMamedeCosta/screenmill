@@ -11,16 +11,21 @@ read_plate_layout(dir)
 \arguments{
 \item{dir}{A directory.}
 }
+\description{
+Read plate layout
+
+Reads a directory of plate layout CSVs exported from Numbers (for mac) into a dataframe.
+}
 \details{
 To generate a plate layout directory with Numbers, make a separate sheet for each plate
-and name each sheet "plate\code{<number>}" (Replace \code{<number>} with the plate number). Then create one
+and name each sheet "plate\verb{<number>}" (Replace \verb{<number>} with the plate number). Then create one
 table for each annotation with columns named "row", "1", "2", "3" etc. for the dimension of the
 plate. In the first "row" column, number each row "1", "2", "3" etc. for the dimension of the
 plate. Name each tabel with the intended annotation (e.g. "strain_id" for a table annotating
 strain IDs for each position in the plate). Once you have annotated your plates, you can export
-them to CSV (\code{File>Export To>CSV...}). Name the resulting directory with the desired strain
+them to CSV (\verb{File>Export To>CSV...}). Name the resulting directory with the desired strain
 collection ID (some combination of the date and a descriptive word is recommended). The files
-in this directory will be named \code{<sheet>-<table>.csv} (e.g. \code{plate1-strain_id.csv}).
+in this directory will be named \verb{<sheet>-<table>.csv} (e.g. \code{plate1-strain_id.csv}).
 
 These tables are required for every plate:
 \itemize{

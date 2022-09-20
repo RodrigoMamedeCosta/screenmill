@@ -4,8 +4,17 @@
 \alias{plot_plates}
 \title{Plot plate as heatmap}
 \usage{
-plot_plates(data, fill, row, col, plate = "plate", query = "query_name",
-  upper = 1, mid = 0, lower = -1)
+plot_plates(
+  data,
+  fill,
+  row,
+  col,
+  plate = "plate",
+  query = "query_name",
+  upper = 1,
+  mid = 0,
+  lower = -1
+)
 }
 \arguments{
 \item{data}{A data frame}

@@ -15,7 +15,8 @@ new_strain_collection <- function(id, nplates, format = 96, dim = c(2, 3)) {
   ncol <- dim[2] * sqrt(format / prod(dim))
   LETTERS <- expand_letters(nrow, LETTERS)
 
-  data_frame(
+  #  data_frame(
+  tibble::tibble(
     strain_collection_id = id,
     strain_id = '',
     plate  = (1:nplates) %>% rep(each = format),

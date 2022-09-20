@@ -67,16 +67,17 @@ DataFrame nearestNeighbor( NumericVector x, NumericVector y) {
 library(spatstat)
 library(microbenchmark)
 library(dplyr)
+library(tibble)
 
 x <- sample(1500)
 y <- sample(1500)
 
 # Note that for spatstat functions "k" is generalized to accept a vector (awesome!)
-spat_nn <- data_frame(dist = nndist(x, y, k = 1), which = nnwhich(x, y, k = 1))
+spat_nn <- tibble(dist = nndist(x, y, k = 1), which = nnwhich(x, y, k = 1))
 my_nn   <- nearestNeighbor(x, y)
 
 microbenchmark(
-  spat_nn = data_frame(dist = nndist(x, y, k = 1), which = nnwhich(x, y, k = 1)),
+  spat_nn = tibble(dist = nndist(x, y, k = 1), which = nnwhich(x, y, k = 1)),
   my_nn   = nearestNeighbor(x, y),  # ~6.5 ms vs. ~1.5 ms
   times = 10L,
   unit = 'ms'

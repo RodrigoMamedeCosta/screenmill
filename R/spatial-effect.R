@@ -24,7 +24,7 @@ spatial_effect <- function(x, y, value, method = c('rlm', 'loess'), deg = 2, ...
   if (!method[1] %in% c('rlm', 'loess')) stop('Unknown method.')
 
   # Combine and clean data
-  data  <- data_frame(x = x, y = y, value = value)
+  data  <- tibble::tibble(x = x, y = y, value = value)
   clean <- filter(data, is.finite(value))
 
   # Fit a smooth surface

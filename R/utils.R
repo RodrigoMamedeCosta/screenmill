@@ -436,7 +436,7 @@ fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols)
   # If fewer than 20 good objects then use default rotation and no fine-crop
   if (nrow(good) < 20) {
     default <-
-      data_frame(
+      tibble::tibble(
         rotate = angle,
         fine_l = 1, fine_r = nrow(clean), fine_t = 1, fine_b = ncol(clean)
       )
@@ -498,7 +498,7 @@ fine_crop <- function(img, rotate, range, pad, invert, n_grid_rows, n_grid_cols)
   b_edge <- as.integer(round(ifelse(b_edge < b_edge_min, b_edge_min, b_edge)))
 
   # Construct fine crop data
-  dplyr::data_frame(
+  tibble::tibble(
     rotate = angle,
     # Adjust edges based on user specified padding
     left   = l_edge - pad[1],
@@ -582,7 +582,7 @@ object_features <- function(img) {
   y  <- m01 / m00
   nn <- nearestNeighbor(x, y)
 
-  data_frame(
+  tibble::tibble(
     obj   = 1:length(objs),
     x     = x,
     y     = y,
@@ -606,7 +606,7 @@ object_features <- function(img) {
 }
 
 object_features_default <- function() {
-  tibble::data_frame(
+  tibble::tibble(
     obj         = integer(0),
     x           = numeric(0),
     y           = numeric(0),
@@ -687,14 +687,14 @@ find_valleys <- function(y, thr, invert = F) {
   valleys <- valleys[which(valleys != 0)]
 
   if (length(valleys) < 1) {
-    return(data_frame(left = numeric(), mid = numeric(), right = numeric()))
+    return(tibble::tibble(left = numeric(), mid = numeric(), right = numeric()))
   }
 
   # Find left, middle, and right edge of valley
   bind_rows(
     lapply(valleys, function(v) {
       x <- which(regions == v)
-      data_frame(left = min(x), mid = mean(x), right = max(x))
+      tibble::tibble(left = min(x), mid = mean(x), right = max(x))
     })
   ) %>%
     mutate(n = 1:n())

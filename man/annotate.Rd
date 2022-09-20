@@ -4,9 +4,18 @@
 \alias{annotate}
 \title{Interactive plate annotation}
 \usage{
-annotate(dir = ".", queries, strain_collections, strain_collection_keys,
-  media, treatments, temperatures = c(23, 27, 30, 33, 37),
-  overwrite = FALSE, update = TRUE, ...)
+annotate(
+  dir = ".",
+  queries,
+  strain_collections,
+  strain_collection_keys,
+  media,
+  treatments,
+  temperatures = c(23, 27, 30, 33, 37),
+  overwrite = FALSE,
+  update = TRUE,
+  ...
+)
 }
 \arguments{
 \item{dir}{Directory of images to process. Defaults to the current working

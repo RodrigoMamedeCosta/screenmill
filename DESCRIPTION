@@ -31,10 +31,11 @@ Imports:
     rstudioapi (>= 0.5),
     rhandsontable (>= 0.3.1),
     rlang
+Encoding: UTF-8
 Suggests:
     ggplot2,
     testthat,
     rothfreezer
 Remotes:
     github::RobertJDReid/rothfreezer
-RoxygenNote: 6.0.1
+RoxygenNote: 7.2.0
