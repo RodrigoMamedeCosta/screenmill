@@ -57,7 +57,7 @@ measure <- function(dir = '.', overwrite = F, save.plates = F, save.colonies = T
   # For each image
   message('Measuring ', length(paths), ' images')
   #progress <- progress_estimated(length(paths))
-  progress <- progress_bar$new(total = length(paths))
+  progress <- progress::progress_bar$new(total = length(paths))
   cores <- ifelse(.Platform$OS.type == 'windows', 1, max(1, detectCores() - 1, na.rm = T))
   lapply(paths, function(pth) {
 
