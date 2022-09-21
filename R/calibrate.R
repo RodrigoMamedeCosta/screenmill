@@ -129,6 +129,7 @@ calibrate_addin <- function() {
 #
 #' @importFrom readr write_csv
 #' @importFrom tibble rownames_to_column
+#' @importFrom progress progress_bar
 
 calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, thresh, invert, rough_pad,
                                fine_pad, rotate, range, display, crp, grd, save_plate,
@@ -166,7 +167,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
   # Determine fine crop coordinates
   if (is.null(default_crop)) {
     #progress <- dplyr::progress_estimated(length(anno$position))
-    progress <- progress::progress_bar$new(total = length(anno$position))
+    progress <- progress_bar$new(total = length(anno$position))
     fine <-
       purrr::map_df(1:length(anno$position), function(i) {
         #progress$tick()$print()
@@ -193,7 +194,7 @@ calibrate_template <- function(template, annotation, key, grid_rows, grid_cols, 
   # Determine grid coordinates
   message('\n', basename(template), ': locating colony grid')
   #progress <- progress_estimated(length(anno$position))
-  progress <- progress::progress_bar$new(total = length(anno$position))
+  progress <- progress_bar$new(total = length(anno$position))
   grid <-
     map_df(1:length(anno$position), function(i) {
       #progress$tick()$print()
