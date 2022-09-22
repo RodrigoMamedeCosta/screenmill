@@ -1,6 +1,6 @@
 Package: screenmill
 Type: Package
-Title: Tools for working with ScreenMill data
+Title: Tools for measuring and annotating arrayed colony data
 Version: 0.1.1
 Date: 2022-09-22
 Authors@R: c(
@@ -10,7 +10,8 @@ Maintainer: 'Eric Bryant' <eeb2139@columbia.edu>
 Description: This package includes tools for making quantitative measurements of colony growth
     propagated in regular arrays on solid agar plates. It ports most of the functionality of 
     the web version of ScreenMill to an R package. For more information about ScreenMill
-    see <http://www.ncbi.nlm.nih.gov/pubmed/20584323>.
+    see <http://www.ncbi.nlm.nih.gov/pubmed/20584323>. The R package includes tools for
+    analyzing time-series growth data.
 License: GPL-3
 LazyData: TRUE
 VignetteBuilder: knitr
