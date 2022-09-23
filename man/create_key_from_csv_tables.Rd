@@ -2,7 +2,6 @@
 % Please edit documentation in R/key_gather.R
 \name{create_key_from_csv_tables}
 \alias{create_key_from_csv_tables}
-\alias{create_key_from_numbers_export}
 \title{Gather annotation information in row by column format and convert into long format.}
 \usage{
 create_key_from_csv_tables(dir, strain_collection_id)
