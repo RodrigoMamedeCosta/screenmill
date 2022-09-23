@@ -2,7 +2,7 @@
 #' Calibrate cropping and rotation parameters
 #'
 #' This function calibrates plate cropping and rotation parameters for an image
-#' with an arbritrarily sized grid of plates.
+#' with an arbitrarily sized grid of plates.
 #'
 #' @param dir Directory of images to process.
 #' @param grid_rows Number of expected rows in colony grid.
@@ -31,7 +31,7 @@
 #' column positions of individual colonies.
 #'
 #' @details
-#' Crop calibration procedes through the following 3 steps:
+#' Crop calibration proceeds through the following 3 steps:
 #'
 #' \enumerate{
 #'   \item Rough crop

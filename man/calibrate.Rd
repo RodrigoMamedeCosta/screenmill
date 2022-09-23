@@ -63,10 +63,10 @@ column positions of individual colonies.}
 }
 \description{
 This function calibrates plate cropping and rotation parameters for an image
-with an arbritrarily sized grid of plates.
+with an arbitrarily sized grid of plates.
 }
 \details{
-Crop calibration procedes through the following 3 steps:
+Crop calibration proceeds through the following 3 steps:
 
 \enumerate{
   \item Rough crop
