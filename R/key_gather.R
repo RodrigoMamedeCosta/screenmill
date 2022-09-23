@@ -58,7 +58,7 @@
 #' @importFrom tidyr pivot_longer
 #' @importFrom stringr str_extract
 #' @aliases create_key_from_numbers_export
-#' @export
+#' @export create_key_from_numbers_export create_key_from_csv_tables
 
 create_key_from_csv_tables <- function(dir, strain_collection_id) {
   # Get all annotation names from exported CSV file names
