@@ -32,12 +32,14 @@ Imports:
     miniUI (>= 0.1.1),
     rstudioapi (>= 0.5),
     rhandsontable (>= 0.3.1),
-    rlang
+    rlang,
+    progress
 Encoding: UTF-8
 Suggests:
     ggplot2,
     testthat,
-    rothfreezer
+    rothfreezer,
+    knitr
 Remotes:
     github::RobertJDReid/rothfreezer
 RoxygenNote: 7.2.0
