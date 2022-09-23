@@ -3,6 +3,7 @@
 export(annotate)
 export(calibrate)
 export(create_key_from_csv_tables)
+export(create_key_from_numbers_export)
 export(growth_parameters)
 export(measure)
 export(new_strain_collection)
