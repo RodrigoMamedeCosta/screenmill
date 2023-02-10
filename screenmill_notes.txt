@@ -1,0 +1,6 @@
+screenmill notes:
+
+2023-02-03
+for reflective scans:
+
+	make a scan mask in blue or green and use this color to mask for rough crops.

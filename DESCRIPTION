@@ -1,8 +1,8 @@
 Package: screenmill
 Type: Package
 Title: Tools for measuring and annotating arrayed colony data
-Version: 0.2.0
-Date: 2022-09-22
+Version: 0.2.1
+Date: 2023-02-09
 Authors@R: c(
     person("Eric", "Bryant", email = "eeb2139@columbia.edu", role = c("aut","cre")),
     person("Robert", "Reid", email = "rr381@cumc.columbia.edu", role = c("aut","edt")))

@@ -19,13 +19,16 @@ review <- function(dir = '.', overwrite = FALSE) {
 
   crop <- read_calibration_crop(dir)
   grid <- read_calibration_grid(dir)
+  anno <- read_annotations(dir)
 
   if (!overwrite && status$flag$reviewed) {
     message('This batch has already been reviewed. Set "overwrite = TRUE" to re-review.')
     return(invisible(status$dir))
   }
 
-  init <- left_join(grid, crop, by = c('template', 'position'))
+  #init <- left_join(grid, crop, by = c('template', 'position'))
+  init <- inner_join(select(anno,group, position, template, strain_collection_id, plate, plate_id),
+    left_join(grid, crop, by = c('template', 'position')))
 
   grouping <- paste(init$template, init$position)
   exit <- length(unique(grouping))
@@ -48,7 +51,10 @@ review <- function(dir = '.', overwrite = FALSE) {
     # On Click Save, write to CSV and quit ------------------------------------
     observeEvent(input$save, {
       bind_rows(react$final) %>%
-        select(template:b, excluded) %>%
+#        select(template:b, excluded) %>% # write out explicit column names for save
+        select(template,position,group,strain_collection_id,
+               plate,row,column,replicate,colony_row,colony_col,
+               x,y,l,r,t,b,excluded) %>% # write out explicit column names for save
         readr::write_csv(status$path$calibration_grid)
       readr::write_csv(data.frame(timestamp = Sys.time()), status$path$review_times, append = TRUE)
       stopApp(invisible(dir))
@@ -59,7 +65,10 @@ review <- function(dir = '.', overwrite = FALSE) {
       n <- input$plate + 1
       if (n > exit) {
         bind_rows(react$final) %>%
-          select(template:b, excluded) %>%
+          #          select(template:b, excluded) %>%
+          select(template,position,group,strain_collection_id,
+                 plate,row,column,replicate,colony_row,colony_col,
+                 x,y,l,r,t,b,excluded) %>% # write out explicit column names for save
           readr::write_csv(status$path$calibration_grid)
         readr::write_csv(data.frame(timestamp = Sys.time()), status$path$review_times, append = TRUE)
         stopApp(invisible(dir))
@@ -105,6 +114,10 @@ review <- function(dir = '.', overwrite = FALSE) {
 
     # Plot only when triggered by change in value to replot -------------------
     observeEvent(react$replot, {
+      output$plate_position <- renderText({paste("Plate & Position = " ,
+                                                names(init_list[input$plate]),
+                                                "  plate_id = ",
+                                                init_list[[input$plate]]$plate_id[1])})
       output$plot1 <- renderPlot({
         react$replot
 
@@ -176,18 +189,19 @@ review <- function(dir = '.', overwrite = FALSE) {
     miniContentPanel(
       fluidRow(
         column(width = 1, align = 'right',
-          actionButton('back_plate', '', icon = icon('angle-left'), style = 'height: 410px;')
+               actionButton('back_plate', '', icon = icon('angle-left'), style = 'height: 410px;')
         ),
         column(width = 10, align = 'center',
-          plotOutput(
-            'plot1',
-            height = '410px',
-            brush = 'brush1',
-            dblclick = 'click1'
-          )
+               textOutput("plate_position"),
+               plotOutput(
+                 'plot1',
+                 height = '410px',
+                 brush = 'brush1',
+                 dblclick = 'click1'
+               )
         ),
         column(width = 1, align = 'left',
-          actionButton('next_plate', '', icon = icon('angle-right'), style = 'height: 410px;')
+               actionButton('next_plate', '', icon = icon('angle-right'), style = 'height: 410px;')
         )
       ),
       p(),
