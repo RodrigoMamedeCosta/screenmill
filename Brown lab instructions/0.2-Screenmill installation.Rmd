@@ -1,0 +1,31 @@
+---
+title: "Screenmill Installation"
+author: "Rodrigo Costa"
+date: "7/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#This can get quite complicated but if you just keep trying to install it will tell you what the issue is. One good way to solve most issues is to update all the packages in Rstudio as you go. For example I had to force installation of uuid (whatever that is) halfway through.
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install(version = "3.18")
+#You may have to update the version - check https://www.bioconductor.org/install/
+
+# Install the latest version of devtools
+(install.packages('devtools', dependencies = T)) 
+
+# Install the latest version of screenmill
+devtools::install_github("RodrigoMamedeCosta/screenmill")
+      #devtools::install_github("robertjdreid/screenmill", ref = "issue11") #OLD, DEPRECATED
+
+#Prepare remotes and install screenmill.grid, which has grid adjustment options
+install.packages("remotes")
+remotes::install_github("robertjdreid/screenmill.grid")
+
+```

@@ -1,0 +1,60 @@
+---
+title: "Save colony size data"
+author: "RC"
+date: "2024-02-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+theme_set(theme_bw())
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+image_folder <- "proc-images"
+```
+
+__ANAlYZE PLATE MEASUREMENTS__
+
+Now that colonies have been measured, the values can be analyzed. The measurement dataset and all of the annotation data can be loaded with `screenmill::read_screenmill`. There are individual read commands for separate annotation data sets, but the general command will compile everything into a single dataframe. This can also be used to combine multiple analysis folders into a single dataframe by providing a list of folder paths.
+
+Also, we will capture the date from the filenames with a little string manipulation using the stringr package that loads along with the tidyverse packages. We could infer the dates by group number, but you would have to rely on this being consistent, so better to capture a date string.
+
+```{r}
+measurements <- screenmill::read_screenmill(image_folder) %>%
+  mutate(
+    scan_date = as.Date(str_extract(file,pattern = "20\\d{2}-\\d{2}-\\d{2}"))
+  )
+```
+
+We also make a time measurement that takes hour into account, because some plates were being imaged after midnight and had the same date as the next day plates.
+```{r}
+
+measurements %>%
+  mutate(
+    cleantime = gsub(".* ", "", template) #This removes the plate number (or any other name) before the date/time
+ ##NEED TO FIND A WAY THAT MORE THAN TWO/THREE CHARACTERS IN THE BEGINNING STILL WORKS
+  ) %>%
+  mutate(
+      scan_time = (strptime(cleantime, format = "%Y-%m-%d-%H-%M-%S")), #this extracts the date and time from the weird format it's in
+      cleantime = NULL
+  ) -> measurements
+```
+
+Make new column with day the scan was made post inoculation. This counts the scan time (rounded to day) minus the time at which the first plate in the set was read. By default the first day plates will show day = 0, which is not what we want. We're imaging the first plate on day 1 so we add a _+1_. Notice that this is for a single set of scans imaged sequentially. If you add scans from other days, it will just count all days from the earliest date (e.g. if you have a set measured on april 1,2,3,4 and a set on april 15,16,17,18 together here, it will start from).
+
+```{r}
+measurements %>%
+  group_by(plate) %>%
+  mutate(
+    scan_day = as.numeric(round(difftime(scan_time,min(scan_time),units="days"))+1)
+  ) -> measurements
+```
+
+Now we save the data. This is what we'll be working with.
+
+```{r}
+write.csv(measurements,"colonysizes.csv")
+```
+

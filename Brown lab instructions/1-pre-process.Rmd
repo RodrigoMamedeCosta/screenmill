@@ -1,0 +1,63 @@
+---
+title: "Pre-process images"
+author: "Rodrigo"
+date: "6/16/2021"
+output:
+  pdf_document: default
+  html_document: default
+params:
+  from_folder: "pre-images"
+  to_folder: "proc-images"
+  mask_cutoff: 0.2
+---
+
+Welcome to Screenmill. I have tried commenting as much as I could so you can use this R project as a guide. When doing your own plates, start a new project (`R.proj`) or at least a new markdown (`.Rmd`) file because you'll be changing a few things. Then when you get the hang of it you can probably delete most of the comments on your own workflow so it's easier to navigate.
+
+For editing the markdown, the rstudio shortcuts will be quite useful: https://bookdown.org/yihui/rmarkdown-cookbook/rstudio-shortcuts.html
+
+Start by loading the library packages that will be needed to run this:
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(screenmill)
+library(screenmill.grid)
+library(EBImage)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Now, assuming that you have inserted all the raw scanner images you want analyzed into the folder called `pre-images`, the next `chunk` (that's the technical term for these things with the play button on the top right) will convert the images to a dark-light-dark configuration for reading by screenmill.
+
+The raw images are scanned with a reflective scanner, so the colonies appear light on dark agar. The background is darker still due to the mask. Screenmill looks for a dark background, light agar and dark colonies because the authors use transmitted light to scan instead of reflected light. Anyway, that just means that in this step inverts the color of the dark borders, then invert the whole image (thresholding then inverting). This is done by selecting all the pixels that are as dark as the mask and turning them white. 
+A cutoff of `0.20` was used based on the preliminary data but this may need to be adjusted at the very top of this script in the `mask_cutoff` function. One template image (the first in the file list) is loaded and a histogram is generated showing that cutoff. If there are errors or if the mask (the plastic overlay) is not homogeneous, changing this value may work. In general we want the cutoff to be at the very start of the "valley" in the histogram, but a couple of decimal points to the right shouldn't hurt.
+
+
+```{r}
+template_files <- list.files(path = file.path(params$from_folder),full.names = TRUE)
+if(!dir.exists(params$to_folder)) dir.create(params$to_folder)
+template <- screenmill:::read_greyscale(template_files[1])
+display(template)
+
+hist(template,breaks=100)
+abline(v=params$mask_cutoff,col="blue",lwd=2)
+```
+
+Process the files. This may take a minute. A message will show up when completed.
+
+```{r}
+dld_convert <- function(img,co) {
+  img[img<co] <- 1
+  return (1-img)
+}
+
+conv_img_file <- function(from_file, to_dir, co) {
+  img <- screenmill:::read_greyscale(from_file)
+  inv <- dld_convert(img,co)
+  flo <- flop(inv) #THIS FLIPS THE IMAGE HORIZONTALLY SO PLATE 1 IS TOP LEFT. IF REMOVED, CHANGE flo TO inv BELOW
+  writeImage(flo,file.path(to_dir,basename(from_file)))
+}
+
+walk(template_files,conv_img_file,params$to_folder,params$mask_cutoff)
+message("Processing complete.")
+```
+
+Once images are processed, move on to the `process-plates.Rmd`.

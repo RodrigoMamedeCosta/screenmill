@@ -1,0 +1,254 @@
+---
+title: "Process Plates"
+author: "Rodrigo"
+date: "4/25/2023"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+Now that pre-processing is complete, you want to first load all the details about the project (the annotation), then calibrate the images so it can find the colonies. This starts by loading the r package library if not already loaded.
+
+```{r Load packages, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(screenmill.grid)
+library(EBImage)
+devtools::load_all("C:/R.Projects/screenmill")
+```
+
+**ANNOTATION**
+
+These following parameters are set for the `annotate` function in screenmill.
+
+-   `image_folder` is the folder of inverted images that were made by the `pre-process.Rmd` script. If you haven't run that script, do so before this.
+
+-   `strain_collection_id` is the name of the collection of plates with the strains being tested. In our case it is likely the UCSF Kn99 knockout mutant library.
+
+-   `screenmill_collection_keys` is the file describing every position of the plate(s) that are tested for growth. Basically the CNAG numbers of each mutant. This needs to be edited if it changes (for example if we get more plates) and saved as screenmill-collection-keys.csv.
+
+-   `media` `treatments` and `queries` contain the items that might be used in your analysis, including the drugs being tested. Make sure you add the drugs to the `screenmill-treatments.csv` (in the same format) before proceeding.
+
+-   Finally, the `collection_name` here is set to `Kn99 KO`. This value can be anything that efficiently designates the collection of strains in the 96-well grid. This exact string will need to be entered into the annotation web page (next step) under the `strain_collection_id` column. If any character is different it won't load correctly and the calibration step will report errors.
+
+All the values in these tables will show up as dropdown lists in the annotations tables.
+
+```{r Annotation, message=FALSE, include=FALSE}
+image_folder <- "proc-images"
+calib_folder <- "calibration-images"
+strain_collection_id <- "Kn99 KO"
+key = read_csv('screenmill-collection-keys.csv')
+media = read_csv('screenmill-media.csv')
+treatments = read_csv('screenmill-treatments.csv')
+queries = read_csv('screenmill-queries.csv')
+collection_name = "Kn99 KO"
+message("Done.")
+```
+
+Once these prerequisites are set, annotation can proceed (run the chunk of code below). It will open an HTML page in the default browser. Fill out the fields and hit save when done.
+
+In the `Group Images` section of the HTML, make sure it's not a time series. It technically is, and if we run it as a time series, the program will take the calibration from the last image and use that for all earlier plates. This would be ideal, but unfortunately the dates that it assigns are based on the last time the images were modified (e.g. copied into the folder) instead of when they were taken (date created). So the timecourse times will be wrong. Therefore, Set the `Time Series?` as `No`.
+
+The automatic numbering it assigns (group 1 to whatever) works fine, even if out of order, because the analysis step (`3-analyse-plates.Rmd`) has functions that will order all the plates by the correct date they were taken in, treatment, etc.
+
+In the `Annotate Groups` section, the number of positions is basically the number of plates that are being scanned in each image. I was doing 9 plates simultaneously (1 control + 4 drugs x 2 concentrations) but fewer will be fine, but make sure to not skip scanner positions (e.g. 1,2,4,5 is bad).
+
+Then in the `Annotate Plates` section you will fill everything out. There are drop-down menus for almost everything (except the `strain_collection_id` which is always `Kn99 KO`). If you have different library plates in the same scan or different drugs, make sure you put the correct information for that `Position` of the scan. You can add new drugs to the drop-down list in the excel file called `screenmill-treatments.csv`. Populate all the fields and then *Save* on the top right.
+
+```{r Annotation, message=FALSE}
+annotate(image_folder,queries = queries, strain_collections = tibble(
+  strain_collection_id = collection_name, description = "Kn99 KO"), 
+  strain_collection_keys = key, media = media, treatments = treatments, overwrite = TRUE)
+message("Annotation complete.")
+```
+
+**CALIBRATION**
+
+Assuming `annotate` went successfully, then calibrate the images, i.e. apply grids. This initial calibration basically finds where all the plates are and then tries to find the colonies using the number that it calculates from the `grid_rows` X `grid_cols`. Then it tries to apply a grid where white pixels will be measured inside each box. This calibration is a set of coordinates (pixels) that identify the placement of the grid on the scanner image.
+
+There are a few functions in the line of code that should be explained. The rotate function defaults to `90`. Adjust according to how the plates are pinned. For the A1-A12 on far away edge, the correct rotation is `-90`.
+
+There are parameters to "pad" both the rough crop (`rough_pad`) and the fine crop (`fine_pad`) values. Negative values for fine crop shrink the ultimate crop value to automatically give an image with colonies that are closer to the edge (helps eliminate the plate edge reflection - which shouldn't be an issue with wider plates). When an edge doesn't crop, these values don't get applied. Adjust with caution, always check to see what the crop looks like.
+
+You want to set it to `overwrite = TRUE` if you want to go back and modify annotations after saving.
+
+This step can take several minutes, depending on how many plates are being read.
+
+If calibrate gives an error, The most likely explanation is that you didn't populate the annotation fields properly, for example missing to fill some blank cells. With me it was when I wrote "KN99 KO" instead of the "Kn99 KO" It's case sensitive.
+
+When it's done, go through the images to check if the grid application (calibration) was successful.
+
+NOTE: The number attributed to each plate during calibration is not the number you see in the images below (that's the date of the scan). The new number will be something like *2023-04-25-001-002-001*, Where the beginning is the date that the plates were annotated on and the rest is the specific plate you are looking at: Year-Month-Day-(number of scan in series)-(plate position in that scan, as seen in the post-it on the scanner)-(always 001 here)
+
+```{r First calibration}
+calibrate(image_folder,grid_rows = 8,grid_cols = 12, rotate = -90, fine_pad = c(0, 0, 0, 0), overwrite = TRUE)
+message("Calibration complete.")
+```
+
+**REVIEW** Review colonies manually. In the calibration output you could see the crops/grids that were messed up. If all grids were applied properly at the calibration step (unlikely but possible), then you don't have to do anything more calibration.
+
+Using review you can see them again and you can see the number of the plates in question. Then you can either exclude individual colonies (contaminated, etc) from being measured or you can exclude the whole plate (`exclude all`), which allows you to force a calibration automatically or manually after measuring the good plates. If a grid is misaligned, exclude it. Then either save at the end or just click the next arrow after the last plate, which closes the panel automatically and also saves what you've done.
+
+```{r Review}
+review(dir = "proc-images", overwrite = TRUE)
+```
+
+**Measure** Now we measure everything that has grids properly applied and was not excluded in the review step.
+
+#WARNING: If the grid edges are outside the image (if some of the blue boxes don't all have 4 sides), the program will crash. If this is the case, you can check the logs folder and last_plate_id.txt will tell you which plate it was processing before crashing (or finishing successfully).
+
+```{r Measure colonies}
+measure("proc-images", overwrite = TRUE)
+message("Measurement Complete.")
+```
+
+**FORCE CALIBRATION AUTOMATICALLY**
+
+For plates in which the grid can't be applied automatically, we can force a calibration grid from a plate in the same position (1 to 9) by copying from one group to another with the `screenmillgrid::use_calibration_from` function. To facilitate this, there are default calibration settings in the folder named `calibration-images`. This has a grid for all 9 positions. To make a new calibration folder run the project called `screenmill calibration`. Basically, we copy the calibration from position 9 in the calibration folder onto the position 9 of your scans. This is first done automatically below, but it can be done to individual plates as well (explained in the ***MANUAL CALIBRATION*** section)
+
+So first we pull out the plates that have not been calibrated.
+
+```{r Find uncalibrated plates}
+#Find plate names that are annotated. This is all the plate names we except to see.
+allplates = read_csv('./proc-images/screenmill-annotations.csv', col_types = cols())
+
+#Then find which ones have been succesfully measured (does not include the ones excluded in the review)
+measurements <- screenmill::read_screenmill(image_folder)
+
+#Now we can identify missing plates by removing the plates that have already been calibrated and measured.
+uncalibrated <- anti_join(allplates, measurements, by = c("plate_id" = "plate_id")) 
+
+#List all plates that were not calibrated automatically.
+print(uncalibrated$plate_id)
+```
+
+Now we find the position of the plate in the scanner image so that we can find the appropriate calibration from our calibration folder.
+
+```{r Assign Calibration to Plate}
+#write date of calibration plates + "-001" (only one scanner image) - CHANGING THIS IS ESSENTIAL IF YOU MODIFIED THE CALIBRATION FOLDER, otherwise do not modify.
+calib_date <- "2023-04-25-001"
+
+#Get the position from the plate_id of uncalibrated plates
+uncalibrated$plate_position = str_sub(uncalibrated$plate_id,-8)
+
+#Associate plate_id with calibration_id
+uncalibrated$calib_id <- paste0(calib_date,uncalibrated$plate_position)
+```
+
+Force calibration.
+
+```{r}
+#for each row in the uncalibrated ids, read the associated plate and then use a calibration for the same position from the calibration folder.
+for (i in seq(nrow(uncalibrated))) {
+  plate_id_i = uncalibrated$plate_id[i]
+  print(plate_id_i) 
+  plate <- read_plate(uncalibrated$plate_id[i], image_folder)
+  plate2 <- plate %>% use_calibration_from(read_plate(uncalibrated$calib_id[i], calib_folder,view = F))
+  save_plate_calibration(plate2)
+  }
+
+message("Forced calibration complete.")
+```
+
+This should have put a default grid on every plate that wasn't calibrated before. It should work well for most plates but those that have been pinned a bit off center may need manual adjustment (see section below). Don't run this again after fixing below, or it will overwrite everything.
+
+**MANUAL CALIBRATION (Including manual forced calibration)**
+
+If there are plates where the grid was improperly applied, either automatically or forced, then we need to adjust the calibration. This can include cases where the grid is catching a bit of the edge or edge reflection (mostly a problem in the omnitrays).
+
+Any plate adjustments with screenmill.grid are done here. This includes finding the plates and applying a grid for plates with very few colonies, which screenmill has a hard time with.
+
+To load each plate, use the names in the plate_id value for the `read_plate` function. These are in the `screenmill-annotations.csv` file. The names are the day when the files were processed followed by the group (timepoint) and the position (e.g. 2021-06-15-004-007-001). Look at the calibrated images above using the *REVIEW* command and see which ones need changing.
+
+
+```{r Final Review}
+review(dir = "proc-images", overwrite = TRUE)
+```
+
+
+Before doing manual adjustments, you can try to use a calibration from a day that has a proper grid in the same scanner position. This is done with the `screenmillgrid::use_calibration_from` function once again, but this time we are now using the calibration we like from the image_folder, not the calib_folder.
+
+To do this select a calibration from the same plate plate (and therefore in the same position) that you were happy with (likely the last day) and use it for the other timepoints. Change only the 4th set of numbers. e.g. "2023-05-30-`002`-001-001". Notice that we are now using the calibration from the image_folder, not the calib_folder.
+
+*WARNING*: Do not save calibration until the correct calibration is achieved. Otherwise it will just keep adding the changes to every recalibration, and then only restarting the whole pre-process will fix it. So keep the `save_plate_calibration` marked with a `#` (converts code to text only) until the end, and when you want to save, just delete the `#` and rerun. Then put the `#` back for safety.
+
+```{r Apply calibration from a different timepoint}
+plate <- read_plate("2023-05-30-003-001-001",image_folder)
+plate2 <- plate %>% use_calibration_from(read_plate("2023-05-30-004-001-001",image_folder,view = F)) #Notice the folder
+#save_plate_calibration(plate2) #Only save when happy with the grid. You can run it without saving to see how it will look.
+```
+
+After each command, you want to save the data by assigning it a new dataframe code, e.g. `plate3 <- plate2 %>% (whatever operation you made on the plate`. Make sure it's always a new number, or the dataframe will be overwritten with the new operation.
+
+If there is no proper calibration to apply, then you need to first find a close enough calibration (Likely the automatic calibration from the calib_folder), apply it, then modify it by moving the grid, changing grid size, etc.
+
+Basically, we have to copy the calibration from position x in one group to the position x of another group. Then the crop can be resized and the grid can be reapplied. If there aren't enough colonies it will cause an error. All the commands are explained here but can be seen in the next chunk.
+
+The first thing you can try is to reapply a grid (`sm_regrid`), which tries to find the colony grid again based on what it can see (the overall crop, not the grid). It may not work for very young colonies. 
+
+If that doesn't work, then you can try to resize the crop (`sm_resize_crop`). You want to see the 96 colonies only, no plastic and avoid the shiny edge of the agar. To adjust the image crop where a grid will attempt to be found and applied, simply change the values on each side (`left, right, up, down`). These values are in pixels. Increments of 10 give you a good idea of how much it shifts. Negative numbers cut the edge you're choosing, positive numbers increase. Then you can try to `sm_regrid` again. 
+
+And if that doesn't work either, then do manual changes to the grid using `shift_grid`. Same rules as above apply, increments of 10 pixels, etc. Playing with resize_crop should be enough that you don't need this, though.
+
+You can even change individual cell sizes with `sm_resize_grid_cell`. Probably useless.
+
+Then if you want you can realign the grid with the command `standardize_grid`. this makes it neater but shouldn't affect readings much, therefore it's optional.
+
+An image will show up demonstrating every step: the image is loaded (with or without grid), the new crop is shown and then the grid is placed over the crop.
+
+After each command, you want to save the data by assigning it a new dataframe name, e.g. `plate3 <- plate2 %>% (whatever operation you made on the plate`. Make sure it's always a new number, or the dataframe will be overwritten with the new operation. A dataframe is just a table, like a csv.
+
+*WARNING*: Again, do not save calibration until the correct calibration is achieved. Otherwise it will just keep adding the changes to every recalibration, and then only restarting the whole pre-process will fix it. So keep the `save_plate_calibration` marked with a `#` (converts code to text only) until the end, and when you want to save, just delete the `#` and rerun. Then put the `#` back for safety.
+
+Below is an example that includes all the commands and their explanation. Do not change it. Make a new chunk for each plate (shortcut = command+option+i) and then edit the plate there by adding the commands you want to do. Make sure to update the numbers of each dataframe (plate1, plate2, etc.)
+
+You can add or remove options by commenting them out (\#)
+
+Once you are done, *REVIEW* the plates again to make sure everything is good and to exclude colonies or plates that are not good for measuring.
+
+```{r Manual calibration commands, eval=FALSE}
+plate <- read_plate("2024-02-23-004-001-001",image_folder) #reads the individual plate.
+#THIS IS WHERE YOU PASTE THE PLATE NUMBER COPIED FROM THE REVIEW
+
+plate2 <- plate %>% use_calibration_from(read_plate("2021-06-22-001-007-001",calib_folder,view = F)) #This forces a calibration manually. Make sure you choose the same position: last 9 numbers are 001-00X-001, with X being one of the 9 positions in the scanner overlay.
+
+plate3 <- plate2 %>% sm_regrid(grid_rows = 8,grid_cols = 12, replicates = 1) #This tries to find the colony grid again based on what it can see.
+
+plate4 <- plate3 %>% sm_resize_crop(left = 0, right = 0, up = 40, down = -40) #changes the crop of the picture. You want to see the 96 colonies only, no plastic. Negative numbers cut the edge you're choosing, positive numbers increase.
+
+plate5 <- shift_grid(plate4, left = 0, right = 0, up = 0, down = 40, view = TRUE) #This changes the position of the grid after it's applied.
+
+plate6 <- plate5 %>% sm_resize_grid_cell(quo(colony_row== 0 | colony_col== 12), left = 0, right = 0, up = -0, down = -0) #This allows you to change the grid sizes of a single column/row or even a single colony. For a column, leave colony_row==0 and vice versa. Having values different than zero in both means you are selecting a single square.
+
+plate7 <- plate6 %>% standardize_grid # This will just make the grid neater. Not super important but satisfying for perfectionists.
+
+# save_plate_calibration(plate7)
+#This saves the plate. Only save a plate when you are happy with it. Remove the comment hashtag and then run that line or the whole chunk again.
+```
+
+This is a short working example that you can modify. It's altering a grid after a calibration is forced. Look at the images step by step to see what changed and you'll get an idea of what can be done.
+
+```{r}
+plate <- read_plate("2023-05-30-004-001-001",image_folder)
+plate2 <- plate %>% use_calibration_from(read_plate("2023-04-25-001-001-001",calib_folder,view = F))
+#plate3 <- plate2 %>% sm_resize_crop(left=0,right=10,up=-10,down=5)
+plate3 <- shift_grid(plate2, left = 0, right = 0, up = 30, down = 0, view = TRUE)
+#plate5 <- plate %>% standardize_grid
+#save_plate_calibration(plate3) #Only save when happy with the grid.
+```
+
+
+**FINAL REVIEW** Review colonies again just to make sure the forced/manual calibrations worked and also to remove any colonies or plates you don't want measured in your final dataset.
+
+```{r Final Review}
+review(dir = "proc-images", overwrite = TRUE)
+```
+
+**FINAL MEASUREMENT** Measure everything one last time. It will repeat measurements that were previously successful but that is fine.
+
+```{r Final Measurement}
+measure("proc-images", overwrite = TRUE)
+cat("Measurement Complete.")
+```
+
+Now moving on to the analysis in `3-analyse-plates.Rmd`.
